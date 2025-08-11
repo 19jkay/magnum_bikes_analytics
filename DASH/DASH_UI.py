@@ -69,6 +69,7 @@ if reload_dash_app == "y":
     value_string = 'OrderQuantity'
     retrain = False
     path = 'Bike_Descriptions'
+    change = "hi"
     poll_forecast = [1, 2, 3, 4, 5, 6]
     forecast_horizon = 6
     product_series = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == product_name].reset_index(drop=True)
