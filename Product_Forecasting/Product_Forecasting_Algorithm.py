@@ -195,9 +195,9 @@ def forecast(df, product_name,  value_string, path, retrain=False, forecast_hori
 
         forecast_transformed = loaded_model.predict(forecast_horizon)
 
-        model_name = "NaiveSeasonal"
-        # cannot do prediction intervals for NaiveSeasonal
-        if model_name == "NaiveSeasonal":
+        model_name = model_class_name
+
+        if model_name == "NaiveEnsembleModel":
             block_size = 7
             periods = 13
             forecast_ci_transformed = bootstrap_prediction_interval(transformed_series, model_info, periods, block_size, forecast_horizon,value_string)

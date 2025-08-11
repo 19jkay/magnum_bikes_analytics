@@ -64,7 +64,6 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
 
     #get forecast
     series_forecast, series_forecast_ci = forecast(series, product_name=product_name, value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
-
     #get forecast dates
     start_date = series_forecast.start_time().strftime('%Y-%m-%d')
     end_date = series_forecast.end_time().strftime('%Y-%m-%d')

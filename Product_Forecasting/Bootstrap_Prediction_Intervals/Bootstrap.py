@@ -73,6 +73,7 @@ def reconstruct_series(trend, seasonal, boot_remainders):
 def bootstrap_prediction_interval(transformed_series, model_info, periods, block_size, forecast_horizon, value_string):
 
     #bootstrapping
+
     trend, seasonal, remainder = decompose_series(transformed_series, periods)
     boot_remainders = block_bootstrap(remainder, block_size=block_size, n_samples=1000)
     series_list = reconstruct_series(trend, seasonal, boot_remainders)

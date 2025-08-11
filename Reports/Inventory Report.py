@@ -18,7 +18,7 @@ print("One year ago: ", one_year_ago_str)
 
 
 reload_data = True
-save_excel = True
+save_excel = False
 #Get TTM (Trailing Twelve Months) data
 df_SalesOrders = Unleashed_SalesOrders_clean_data_parallel(start_date=one_year_ago_str, end_date=today_str, reload=reload_data, save_excel=save_excel)
 print("SalesOrders Loaded")

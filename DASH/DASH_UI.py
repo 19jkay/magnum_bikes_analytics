@@ -5,7 +5,7 @@ from DASH.DASH_main import dash_bike_launch, dash_bike_reload
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
 
 
-def find_best_matches(user_input, choices, limit=5, threshold=60):
+def find_best_matches(user_input, choices, limit=7, threshold=60):
     """
     Returns the top matches for user_input from choices using fuzzy matching.
     """
@@ -21,7 +21,7 @@ print("Last day of previous month:", last_day_prev_month_str)
 
 #load data
 reload_data = False
-save_excel = False
+save_excel = True
 df_bikes_list, df_accessories_list, df_parts = Unleashed_product_forecast_data(start_date='2022-01-01', end_date=last_day_prev_month_str, reload=reload_data, save_excel=save_excel)
 
 #organize data
@@ -46,6 +46,7 @@ bike_names = df_bikes_descriptions['ProductDescription'].unique().tolist()
 
 user_input = input("Enter bike name or partial name: ")
 matches = find_best_matches(user_input, bike_names)
+print(matches)
 
 if matches:
     print("\nTop matches:")
@@ -54,7 +55,7 @@ if matches:
 else:
     print("No close matches found.")
 
-product_name = input("Enter final product name: ")
+product_name = matches[int(input("Enter number for final product name: ")) - 1]
 
 reload_dash_app = input("Start brand new dash app? (y/n): ")
 
@@ -67,7 +68,7 @@ if reload_dash_app == "y":
     # product_name = 'Ranger 2.0 - BLK/WHT - 48V 20Ah'
     value_string = 'OrderQuantity'
     retrain = False
-    path = 'Bikes'
+    path = 'Bike_Descriptions'
     poll_forecast = [1, 2, 3, 4, 5, 6]
     forecast_horizon = 6
     product_series = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == product_name].reset_index(drop=True)
