@@ -44,81 +44,71 @@ def dash_app(data, product_name):
     import matplotlib
     matplotlib.use('Agg')
 
-    # data['Month'] = data['Year-Month'].dt.strftime('%Y-%m-%d')
-    # data.drop(columns=['Year-Month'], inplace=True)
     data['Year-Month'] = pd.to_datetime(data['Year-Month'])
     data['Year-Month'] = data['Year-Month'].dt.to_period('M')
     data['Year-Month'] = data['Year-Month'].dt.to_timestamp()
     data['Year-Month'] = data['Year-Month'].dt.strftime('%Y-%m-%d')
 
-    #update data once to start
     data = update_data(data)
 
-    data = data[['Year-Month', 'Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory', 'Ending Inventory', 'Purchases']]
-    # for col in data.columns[1:]:
-    #     data[col] = pd.to_numeric(data[col], errors='coerce')
+    metrics = ['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory', 'Ending Inventory', 'Purchases']
+    data = data[['Year-Month'] + metrics]
 
-    # Transpose the data
     transposed = data.set_index('Year-Month').T
     transposed.reset_index(inplace=True)
     transposed.rename(columns={'index': 'Metric'}, inplace=True)
-    data=transposed.to_dict('records')
-
 
     app = Dash(__name__)
 
-
-    # Layout with editable table and graph
     app.layout = html.Div([
-        html.H1(product_name + " Forecast Dashboard",
-                style={'textAlign': 'center', 'marginBottom': '20px'}),
+        html.H1(product_name + " Forecast Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
+
         dash_table.DataTable(
             id='editable-table',
             data=transposed.to_dict('records'),
             columns=[{'name': col, 'id': col, 'editable': True} for col in transposed.columns],
             style_table={'overflowX': 'auto'}
         ),
+
+        html.Label("Select metrics to display:"),
+        dcc.Checklist(
+            id='metric-selector',
+            options=[{'label': m, 'value': m} for m in metrics],
+            value=['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory'],
+            inline=True
+        ),
+
         dcc.Graph(id='line-chart')
     ])
 
-
-    # Callback to update the graph and recalculate Final Consensus
     @app.callback(
         Output('line-chart', 'figure'),
         Output('editable-table', 'data'),
         Input('editable-table', 'data'),
-        Input('editable-table', 'columns')
+        Input('editable-table', 'columns'),
+        Input('metric-selector', 'value')
     )
-    def update_graph_and_table(rows, columns):
+    def update_graph_and_table(rows, columns, selected_metrics):
         df = pd.DataFrame(rows)
         df.set_index('Metric', inplace=True)
         df = df.T
         df.index.name = 'Year-Month'
         df.reset_index(inplace=True)
 
-        # Convert numeric columns
         for col in df.columns[1:]:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-        if 'Analytical Forecast (Kay)' in df.columns and 'Financial Forecast (Poll)' in df.columns and 'Final Consensus' in df.columns and 'Inventory' in df.columns and 'Ending Inventory' in df.columns and 'Purchases' in df.columns:
+        if all(metric in df.columns for metric in metrics):
             df = update_data(df)
-            # df['Final Consensus'] = 0.5 * (
-            #         df['Unit Forecast (Kay)'].fillna(0) + df['Unit Forecast (Poll)'].fillna(0)
-            # )
 
-        #save updated data from interactive plot changes
         save_dataframe(df, product_name)
 
-        # Create line chart
         fig = go.Figure()
-        for col in ['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory']:
+        for col in selected_metrics:
             fig.add_trace(go.Scatter(x=df['Year-Month'], y=df[col], mode='lines+markers', name=col))
-        # for col in df.columns[1:]:
-        #     fig.add_trace(go.Scatter(x=df['Month'], y=df[col], mode='lines+markers', name=col))
 
         fig.update_layout(title='Metrics Over Time', xaxis_title='Year-Month', yaxis_title='Value')
 
-        # Transpose back for table display
         updated_transposed = df.set_index('Year-Month').T
         updated_transposed.reset_index(inplace=True)
         updated_transposed.rename(columns={'index': 'Metric'}, inplace=True)
@@ -126,3 +116,91 @@ def dash_app(data, product_name):
         return fig, updated_transposed.to_dict('records')
 
     app.run(debug=False)
+
+
+# def dash_app(data, product_name):
+#     import matplotlib
+#     matplotlib.use('Agg')
+#
+#     # data['Month'] = data['Year-Month'].dt.strftime('%Y-%m-%d')
+#     # data.drop(columns=['Year-Month'], inplace=True)
+#     data['Year-Month'] = pd.to_datetime(data['Year-Month'])
+#     data['Year-Month'] = data['Year-Month'].dt.to_period('M')
+#     data['Year-Month'] = data['Year-Month'].dt.to_timestamp()
+#     data['Year-Month'] = data['Year-Month'].dt.strftime('%Y-%m-%d')
+#
+#     #update data once to start
+#     data = update_data(data)
+#
+#     data = data[['Year-Month', 'Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory', 'Ending Inventory', 'Purchases']]
+#     # for col in data.columns[1:]:
+#     #     data[col] = pd.to_numeric(data[col], errors='coerce')
+#
+#     # Transpose the data
+#     transposed = data.set_index('Year-Month').T
+#     transposed.reset_index(inplace=True)
+#     transposed.rename(columns={'index': 'Metric'}, inplace=True)
+#     data=transposed.to_dict('records')
+#
+#
+#     app = Dash(__name__)
+#
+#
+#     # Layout with editable table and graph
+#     app.layout = html.Div([
+#         html.H1(product_name + " Forecast Dashboard",
+#                 style={'textAlign': 'center', 'marginBottom': '20px'}),
+#         dash_table.DataTable(
+#             id='editable-table',
+#             data=transposed.to_dict('records'),
+#             columns=[{'name': col, 'id': col, 'editable': True} for col in transposed.columns],
+#             style_table={'overflowX': 'auto'}
+#         ),
+#         dcc.Graph(id='line-chart')
+#     ])
+#
+#
+#     # Callback to update the graph and recalculate Final Consensus
+#     @app.callback(
+#         Output('line-chart', 'figure'),
+#         Output('editable-table', 'data'),
+#         Input('editable-table', 'data'),
+#         Input('editable-table', 'columns')
+#     )
+#     def update_graph_and_table(rows, columns):
+#         df = pd.DataFrame(rows)
+#         df.set_index('Metric', inplace=True)
+#         df = df.T
+#         df.index.name = 'Year-Month'
+#         df.reset_index(inplace=True)
+#
+#         # Convert numeric columns
+#         for col in df.columns[1:]:
+#             df[col] = pd.to_numeric(df[col], errors='coerce')
+#
+#         if 'Analytical Forecast (Kay)' in df.columns and 'Financial Forecast (Poll)' in df.columns and 'Final Consensus' in df.columns and 'Inventory' in df.columns and 'Ending Inventory' in df.columns and 'Purchases' in df.columns:
+#             df = update_data(df)
+#             # df['Final Consensus'] = 0.5 * (
+#             #         df['Unit Forecast (Kay)'].fillna(0) + df['Unit Forecast (Poll)'].fillna(0)
+#             # )
+#
+#         #save updated data from interactive plot changes
+#         save_dataframe(df, product_name)
+#
+#         # Create line chart
+#         fig = go.Figure()
+#         for col in ['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory']:
+#             fig.add_trace(go.Scatter(x=df['Year-Month'], y=df[col], mode='lines+markers', name=col))
+#         # for col in df.columns[1:]:
+#         #     fig.add_trace(go.Scatter(x=df['Month'], y=df[col], mode='lines+markers', name=col))
+#
+#         fig.update_layout(title='Metrics Over Time', xaxis_title='Year-Month', yaxis_title='Value')
+#
+#         # Transpose back for table display
+#         updated_transposed = df.set_index('Year-Month').T
+#         updated_transposed.reset_index(inplace=True)
+#         updated_transposed.rename(columns={'index': 'Metric'}, inplace=True)
+#
+#         return fig, updated_transposed.to_dict('records')
+#
+#     app.run(debug=False)

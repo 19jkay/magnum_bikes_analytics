@@ -1,14 +1,11 @@
 from rapidfuzz import process
 
 from Product_Forecasting.Product_Forecast_Clean import *
-from DASH.DASH_main import dash_bike_launch, dash_bike_reload
+from DASH.DASH_main import dash_bike_launch, dash_bike_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
 
 
-def find_best_matches(user_input, choices, limit=7, threshold=60):
-    """
-    Returns the top matches for user_input from choices using fuzzy matching.
-    """
+def find_best_matches(user_input, choices, limit=10, threshold=60):
     matches = process.extract(user_input, choices, limit=limit, score_cutoff=threshold)
     return [match[0] for match in matches]
 
@@ -35,7 +32,7 @@ df_accessories_top_5 = df_accessories_top_5.loc[df_accessories_top_5['Year-Month
 df_accessories_other = df_accessories_other.loc[df_accessories_other['Year-Month'] <= last_day_prev_month_str]
 df_parts = df_parts.loc[df_parts['Year-Month'] <= last_day_prev_month_str]
 
-
+special_bikes = ['Cosmo 2.0 T - Black- 48v 15 Ah', 'Cosmo 2.0 T - Calypso - 48v 15 Ah']
 
 
 
@@ -60,9 +57,6 @@ product_name = matches[int(input("Enter number for final product name: ")) - 1]
 reload_dash_app = input("Start brand new dash app? (y/n): ")
 
 
-
-
-
 if reload_dash_app == "y":
     #have all of these be user input
     # product_name = 'Ranger 2.0 - BLK/WHT - 48V 20Ah'
@@ -71,9 +65,30 @@ if reload_dash_app == "y":
     path = 'Bike_Descriptions'
     poll_forecast = [1, 2, 3, 4, 5, 6]
     forecast_horizon = 6
-    product_series = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == product_name].reset_index(drop=True)
 
-    dash_bike_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name, value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
+    #Cosmo black
+    if product_name ==  'Cosmo 2.0 T - Black- 48v 15 Ah':
+        print("hit Costco")
+        cosmo_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah'].reset_index(drop=True)
+        lowrider_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Low rider 2.0 - Black-Copper - 48v 15Ah'].reset_index(drop=True)
+        dash_cosmo_black_bike_launch(cosmo_black_bike=cosmo_black_bike, lowrider_black_bike=lowrider_black_bike, product_name=product_name, value_string=value_string, path=path, forecast_horizon=forecast_horizon)
+
+    #Cosmo calypso
+    elif product_name == 'Cosmo 2.0 T - Calypso - 48v 15 Ah':
+        print("Calypso hit")
+        scaler = 0.15
+        cosmo_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah'].reset_index(drop=True)
+        lowrider_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Low rider 2.0 - Black-Copper - 48v 15Ah'].reset_index(drop=True)
+        #adjust data
+        cosmo_black_bike['OrderQuantity'] = scaler * cosmo_black_bike['OrderQuantity']
+        lowrider_black_bike['OrderQuantity'] = scaler * lowrider_black_bike['OrderQuantity']
+
+        dash_cosmo_calypso_bike_launch(cosmo_black_bike=cosmo_black_bike, lowrider_black_bike=lowrider_black_bike, product_name=product_name, value_string=value_string, path=path, forecast_horizon=forecast_horizon)
+
+    #Other bikes
+    else:
+        product_series = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == product_name].reset_index(drop=True)
+        dash_bike_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name, value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
 
 else:
     path_segment = 'Product_Forecast'
@@ -82,7 +97,6 @@ else:
 
     # Build dynamic output path
     output_dir = os.path.join(r"C:\Users\joshu\Documents\DASH", path_segment)
-    # os.makedirs(output_dir, exist_ok=True)
 
     # Clean filename components
     safe_product_name = product_name.replace("/", "_").replace(":", "_")

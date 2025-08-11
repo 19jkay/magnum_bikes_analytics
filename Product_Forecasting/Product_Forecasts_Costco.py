@@ -40,7 +40,7 @@ RETRAIN = False
 cosmo_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah'].reset_index(drop=True)
 lowrider_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Low rider 2.0 - Black-Copper - 48v 15Ah'].reset_index(drop=True)
 poll_cosmo_black_forecast = [700, 1300, 1400, 1400, 1000, 0]
-cosmo_black_forecast_series = cosmo_black_forecast(cosmo_black_bike, lowrider_black_bike,  product_name='Cosmo 2.0 T - Black- 48v 15 Ah', value_string='OrderQuantity', path='Bikes')
+cosmo_black_forecast_series = cosmo_black_forecast(cosmo_black_bike, lowrider_black_bike,  product_name='Cosmo 2.0 T - Black- 48v 15 Ah', value_string='OrderQuantity', path='Bike_Descriptions')
 
 cosmo_dash(cosmo_black_forecast_series, poll_forecast=poll_cosmo_black_forecast, product_name='Cosmo 2.0 T - Black- 48v 15 Ah') #Dash App
 
@@ -52,7 +52,7 @@ scaler = 0.15
 adjusted_cosmo_black_bike['OrderQuantity'] = scaler * adjusted_cosmo_black_bike['OrderQuantity']
 adjusted_lowrider_black_bike['OrderQuantity'] = scaler * adjusted_lowrider_black_bike['OrderQuantity']
 poll_cosmo_calypso_forecast = [200, 200, 300, 400, 300, 0]
-cosmo_calypso_forecast_series = cosmo_calypso_forecast(adjusted_cosmo_black_bike, adjusted_lowrider_black_bike,  product_name='Cosmo 2.0 T - Calypso - 48v 15 Ah', value_string='OrderQuantity', path='Bikes')
+cosmo_calypso_forecast_series = cosmo_calypso_forecast(adjusted_cosmo_black_bike, adjusted_lowrider_black_bike,  product_name='Cosmo 2.0 T - Calypso - 48v 15 Ah', value_string='OrderQuantity', path='Bike_Descriptions')
 
 cosmo_dash(cosmo_calypso_forecast_series,poll_forecast=poll_cosmo_calypso_forecast, product_name='Cosmo 2.0 T - Calypso - 48v 15 Ah') #Dash App
 
