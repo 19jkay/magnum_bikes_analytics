@@ -45,7 +45,7 @@ def forecast(df, product_name,  value_string, path, retrain=False, forecast_hori
         transformed_train = transformer.transform(train)
         transformed_test = transformer.transform(test)
 
-        print("Retraining...")
+        print("Training...")
         # Navie ensemble model
         parameters = {"forecasting_models": [[NaiveSeasonal(K=12), LinearRegressionModel(lags=[-12, -24])],
                                              [NaiveSeasonal(K=12), LinearRegressionModel(lags=[-1, -2, -3, -4, -12])],

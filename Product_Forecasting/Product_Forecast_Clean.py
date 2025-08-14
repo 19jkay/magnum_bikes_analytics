@@ -164,6 +164,224 @@ def Unleashed_product_forecast_data(start_date, end_date, reload=True, save_exce
 
     return df_bikes_list, df_accessories_list, df_parts
 
+
+
+def Unleashed_bikes_product_forecast_data(start_date, end_date, reload=True, save_excel=False):
+
+    if reload:
+        df = Unleashed_SalesOrders_clean_data_parallel(start_date=start_date, end_date=end_date, reload=reload, save_excel=save_excel)
+
+        df['CompletedDate'] = pd.to_datetime(df['CompletedDate'])
+        df['Year-Month'] = df['CompletedDate'].dt.to_period('M')
+        df['Year-Month'] = df['Year-Month'].dt.to_timestamp()
+        df = df.groupby(['Year-Month', 'ProductGroup', 'ProductDescription'])[['OrderQuantity', 'LineTotal']].sum().reset_index()
+
+        # used for filling in full dates for accessories and bikes
+        full_dates = pd.date_range(start=df['Year-Month'].min(),
+                                   end=df['Year-Month'].max(),
+                                   freq='MS')  # 'MS' = Month Start
+        full_df = pd.DataFrame({'Year-Month': full_dates})
+        full_df['LineTotal'] = 0
+        full_df['OrderQuantity'] = 0
+
+        df_bikes = df.loc[df['ProductGroup'] == 'Bikes'].copy()
+        df_bikes['Bike_type'] = df_bikes['ProductDescription'].str.extract(r'^\s*(.*?)\s*-\s*')
+        df_bikes = df_bikes.groupby(['Year-Month', 'Bike_type'])[['OrderQuantity', 'LineTotal']].sum().reset_index()
+
+        # fill in missing data
+        bike_types = df_bikes['Bike_type'].unique()
+
+        bikes_df_list = []
+
+        for bike_type in bike_types:
+            one_bike_type = df_bikes.loc[df_bikes['Bike_type'] == bike_type].reset_index(drop=True)
+
+            filled_df = pd.merge(full_df, one_bike_type, on='Year-Month', how='left', suffixes=('_full', '_orig'))
+
+            filled_df['LineTotal'] = filled_df['LineTotal_orig'].fillna(filled_df['LineTotal_full'])
+            filled_df['OrderQuantity'] = filled_df['OrderQuantity_orig'].fillna(filled_df['OrderQuantity_full'])
+            filled_df['Bike_type'] = filled_df['Bike_type'].fillna(bike_type)
+
+            new_one_bike_type = filled_df[['Year-Month', 'Bike_type', 'OrderQuantity', 'LineTotal']]
+            bikes_df_list.append(new_one_bike_type)
+            # employee_df['Sub Total'] = employee_df['Sub Total'].clip(lower=0)
+
+        df_bikes = pd.concat(bikes_df_list, ignore_index=True)
+
+        # pd.set_option('display.max_rows', None)
+        # print(df_bikes)
+
+        # df bikes with descriptions to forecast on description level
+        df_bikes_descriptions = df.loc[df['ProductGroup'] == 'Bikes']
+        df_bikes_descriptions = df_bikes_descriptions.groupby(['Year-Month', 'ProductDescription'])[
+            ['OrderQuantity', 'LineTotal']].sum().reset_index()
+
+        # now fill in missing dates with 0 for each bike description
+        bike_description_types = df_bikes_descriptions['ProductDescription'].unique()
+
+        bikes_descriptions_df_list = []
+        for bike_description_type in bike_description_types:
+            one_bike_type = df_bikes_descriptions.loc[
+                df_bikes_descriptions['ProductDescription'] == bike_description_type].reset_index(drop=True)
+
+            filled_df = pd.merge(full_df, one_bike_type, on='Year-Month', how='left', suffixes=('_full', '_orig'))
+
+            filled_df['LineTotal'] = filled_df['LineTotal_orig'].fillna(filled_df['LineTotal_full'])
+            filled_df['OrderQuantity'] = filled_df['OrderQuantity_orig'].fillna(filled_df['OrderQuantity_full'])
+            filled_df['ProductDescription'] = filled_df['ProductDescription'].fillna(bike_description_type)
+
+            new_one_bike_type = filled_df[['Year-Month', 'ProductDescription', 'OrderQuantity', 'LineTotal']]
+            bikes_descriptions_df_list.append(new_one_bike_type)
+            # employee_df['Sub Total'] = employee_df['Sub Total'].clip(lower=0)
+
+        df_bikes_descriptions = pd.concat(bikes_descriptions_df_list, ignore_index=True)
+
+        if save_excel:
+            file_path = r"C:\Users\joshu\Documents\Unleashed_API\Unleashed_bikes_product_forecast_data\df_bikes.xlsx"
+            folder_path = os.path.dirname(file_path)
+            os.makedirs(folder_path, exist_ok=True)
+            df_bikes.to_excel(file_path, index=False)
+            print(f"Excel file written to: {file_path}")
+
+            file_path = r"C:\Users\joshu\Documents\Unleashed_API\Unleashed_bikes_product_forecast_data\df_bikes_descriptions.xlsx"
+            folder_path = os.path.dirname(file_path)
+            os.makedirs(folder_path, exist_ok=True)
+            df_bikes_descriptions.to_excel(file_path, index=False)
+            print(f"Excel file written to: {file_path}")
+
+
+    else:
+        DF_BIKES_FILENAME = r"C:\Users\joshu\Documents\Unleashed_API\Unleashed_bikes_product_forecast_data\df_bikes.xlsx"
+        df_bikes = pd.read_excel(DF_BIKES_FILENAME)
+
+        DF_BIKES_DESCRIPTIONS_FILENAME = r"C:\Users\joshu\Documents\Unleashed_API\Unleashed_bikes_product_forecast_data\df_bikes_descriptions.xlsx"
+        df_bikes_descriptions = pd.read_excel(DF_BIKES_DESCRIPTIONS_FILENAME)
+
+
+    return df_bikes, df_bikes_descriptions
+
+
+
+
+def Unleashed_parts_product_forecast_data(start_date, end_date, reload=True, save_excel=False):
+
+    if reload:
+        df = Unleashed_SalesOrders_clean_data_parallel(start_date=start_date, end_date=end_date, reload=reload, save_excel=save_excel)
+
+        df['CompletedDate'] = pd.to_datetime(df['CompletedDate'])
+        df['Year-Month'] = df['CompletedDate'].dt.to_period('M')
+        df['Year-Month'] = df['Year-Month'].dt.to_timestamp()
+        df = df.groupby(['Year-Month', 'ProductGroup', 'ProductDescription'])[['OrderQuantity', 'LineTotal']].sum().reset_index()
+
+        # used for filling in full dates for accessories and bikes
+        full_dates = pd.date_range(start=df['Year-Month'].min(),
+                                   end=df['Year-Month'].max(),
+                                   freq='MS')  # 'MS' = Month Start
+        full_df = pd.DataFrame({'Year-Month': full_dates})
+        full_df['LineTotal'] = 0
+        full_df['OrderQuantity'] = 0
+
+        # begin parts
+        parts_groups = ['Battery',
+                        'Bottom Brackets', 'Brakes', 'Chargers',
+                        'Cockpit', 'Controllers', 'Conversion Kit', 'Derailleur Hangers',
+                        'Displays', 'Drivetrain', 'Electronics', 'Fenders', 'Forks', 'Frame',
+                        'Headset', 'Lights', 'Motor Wheels', 'Motors',
+                        'Racks', 'Scooters', 'Shifters', 'Throttles', 'Tires', 'Tubes',
+                        'Wheels', 'Derailleurs']
+
+        df_parts = df.loc[df['ProductGroup'].isin(parts_groups)]
+        df_parts = df_parts.groupby(['Year-Month', 'ProductDescription'])[['OrderQuantity', 'LineTotal']].sum().reset_index()
+
+        # now fill in missing dates with 0 for each bike description
+        parts = df_parts['ProductDescription'].unique()
+
+        parts_df_list = []
+        for part in parts:
+            one_part = df_parts.loc[df_parts['ProductDescription'] == part].reset_index(drop=True)
+
+            filled_df = pd.merge(full_df, one_part, on='Year-Month', how='left', suffixes=('_full', '_orig'))
+
+            filled_df['LineTotal'] = filled_df['LineTotal_orig'].fillna(filled_df['LineTotal_full'])
+            filled_df['OrderQuantity'] = filled_df['OrderQuantity_orig'].fillna(filled_df['OrderQuantity_full'])
+            filled_df['ProductDescription'] = filled_df['ProductDescription'].fillna(part)
+
+            new_part = filled_df[['Year-Month', 'ProductDescription', 'OrderQuantity', 'LineTotal']]
+            parts_df_list.append(new_part)
+            # employee_df['Sub Total'] = employee_df['Sub Total'].clip(lower=0)
+
+        df_parts = pd.concat(parts_df_list, ignore_index=True)
+
+        if save_excel:
+            file_path = r"C:\Users\joshu\Documents\Unleashed_API\Unleashed_parts_product_forecast_data\df_parts.xlsx"
+            folder_path = os.path.dirname(file_path)
+            os.makedirs(folder_path, exist_ok=True)
+            df_parts.to_excel(file_path, index=False)
+            print(f"Excel file written to: {file_path}")
+
+    else:
+        DF_PARTS_FILENAME = r"C:\Users\joshu\Documents\Unleashed_API\Unleashed_parts_product_forecast_data\df_parts.xlsx"
+        df_parts = pd.read_excel(DF_PARTS_FILENAME)
+
+
+    return df_parts
+
+
+
+
+def Unleashed_accessories_product_forecast_data(start_date, end_date, reload=True, save_excel=False):
+
+    if reload:
+        df = Unleashed_SalesOrders_clean_data_parallel(start_date=start_date, end_date=end_date, reload=reload, save_excel=save_excel)
+
+        df['CompletedDate'] = pd.to_datetime(df['CompletedDate'])
+        df['Year-Month'] = df['CompletedDate'].dt.to_period('M')
+        df['Year-Month'] = df['Year-Month'].dt.to_timestamp()
+        df = df.groupby(['Year-Month', 'ProductGroup', 'ProductDescription'])[['OrderQuantity', 'LineTotal']].sum().reset_index()
+
+        # used for filling in full dates for accessories and bikes
+        full_dates = pd.date_range(start=df['Year-Month'].min(),
+                                   end=df['Year-Month'].max(),
+                                   freq='MS')  # 'MS' = Month Start
+        full_df = pd.DataFrame({'Year-Month': full_dates})
+        full_df['LineTotal'] = 0
+        full_df['OrderQuantity'] = 0
+
+        df_accessories = df.loc[(df['ProductGroup'] == 'Accessories') | (df['ProductGroup'] == 'Accessories SLC Store')]
+        df_accessories = df_accessories.groupby(['Year-Month', 'ProductDescription'])[['OrderQuantity', 'LineTotal']].sum().reset_index()
+
+        # now fill in missing dates with 0 for each bike description
+        accessories = df_accessories['ProductDescription'].unique()
+
+        accessories_df_list = []
+        for accessory in accessories:
+            one_part = df_accessories.loc[df_accessories['ProductDescription'] == accessory].reset_index(drop=True)
+
+            filled_df = pd.merge(full_df, one_part, on='Year-Month', how='left', suffixes=('_full', '_orig'))
+
+            filled_df['LineTotal'] = filled_df['LineTotal_orig'].fillna(filled_df['LineTotal_full'])
+            filled_df['OrderQuantity'] = filled_df['OrderQuantity_orig'].fillna(filled_df['OrderQuantity_full'])
+            filled_df['ProductDescription'] = filled_df['ProductDescription'].fillna(accessory)
+
+            new_accessory = filled_df[['Year-Month', 'ProductDescription', 'OrderQuantity', 'LineTotal']]
+            accessories_df_list.append(new_accessory)
+
+        df_accessories = pd.concat(accessories_df_list, ignore_index=True)
+
+        if save_excel:
+            file_path = r"C:\Users\joshu\Documents\Unleashed_API\Unleashed_accessories_product_forecast_data\df_accessories.xlsx"
+            folder_path = os.path.dirname(file_path)
+            os.makedirs(folder_path, exist_ok=True)
+            df_accessories.to_excel(file_path, index=False)
+            print(f"Excel file written to: {file_path}")
+
+    else:
+        DF_ACCESSORIES_FILENAME = r"C:\Users\joshu\Documents\Unleashed_API\Unleashed_accessories_product_forecast_data\df_accessories.xlsx"
+        df_accessories = pd.read_excel(DF_ACCESSORIES_FILENAME)
+
+
+    return df_accessories
+
 #
 # reload_data = False
 # a, b, c = Unleashed_product_forecast_data(start_date='2022-01-01', end_date='2025-06-30', reload=reload_data)

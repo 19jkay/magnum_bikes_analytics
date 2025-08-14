@@ -136,6 +136,7 @@ def clean_stock_on_hand(df):
     return df
 
 def clean_sales_orders(df):
+
     customer_df = df['Customer'].apply(pd.Series)
     df_expanded = pd.concat([df.drop(columns=['Customer']), customer_df], axis=1)
     df_expanded = df_expanded.rename(columns={'LastModifiedOn': 'Customer_LastModifiedOn'})
@@ -158,7 +159,6 @@ def clean_sales_orders(df):
     final_df['OrderDate'] = final_df['OrderDate'].apply(convert_ms_date).dt.date.astype(str)
     final_df['RequiredDate'] = final_df['RequiredDate'].apply(convert_ms_date).dt.date.astype(str)
     final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
-
     return final_df
 
 
