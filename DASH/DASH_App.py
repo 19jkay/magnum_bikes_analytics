@@ -6,9 +6,8 @@ import os
 
 
 
-def save_dataframe(df, product_name, path_segment='Product_Forecast', filename_suffix="consensus_data", extension="xlsx"):
-    # Build dynamic output path
-    output_dir = os.path.join(r"C:\Users\joshu\Documents\DASH", path_segment)
+def save_dataframe(df, product_name, path, filename_suffix="consensus_data", extension="xlsx"):
+    output_dir = os.path.join(r"C:\Users\joshu\Documents\DASH", path)
     os.makedirs(output_dir, exist_ok=True)
 
     # Clean filename components
@@ -40,7 +39,7 @@ def update_data(data):
     return data
 
 
-def dash_app(data, product_name):
+def dash_app(data, product_name, path):
     import matplotlib
     matplotlib.use('Agg')
 
@@ -101,7 +100,7 @@ def dash_app(data, product_name):
         if all(metric in df.columns for metric in metrics):
             df = update_data(df)
 
-        save_dataframe(df, product_name)
+        save_dataframe(df, product_name, path)
 
         fig = go.Figure()
         for col in selected_metrics:

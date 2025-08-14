@@ -1,13 +1,46 @@
 from rapidfuzz import process
 
 from Product_Forecasting.Product_Forecast_Clean import *
-from DASH.DASH_main import dash_bike_launch, dash_bike_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch
+from DASH.DASH_main import dash_bike_launch, dash_bike_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, cosmo_dash
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
 
 
 def find_best_matches(user_input, choices, limit=10, threshold=60):
     matches = process.extract(user_input, choices, limit=limit, score_cutoff=threshold)
     return [match[0] for match in matches]
+
+def display_matches(user_input, choices):
+    matches = find_best_matches(user_input, choices)
+
+    if matches:
+        print("\nTop matches:")
+        for i, name in enumerate(matches, 1):
+            print(f"{i}. {name}")
+    else:
+        print("No close matches found.")
+
+    product_name = matches[int(input("Enter number for final product name: ")) - 1]
+    return product_name
+
+def reload_df_for_dash(product_name, path):
+    # path_segment = r'Products\Product_SKUs'
+    # df = reload_df_for_dash(product_name=product_name, path_segment=path_segment)
+    filename_suffix = "consensus_data"
+    extension = "xlsx"
+
+    # Build dynamic output path
+    output_dir = os.path.join(r"C:\Users\joshu\Documents\DASH", path)
+
+    # Clean filename components
+    safe_product_name = product_name.replace("/", "_").replace(":", "_")
+    filename = f"{safe_product_name}_{filename_suffix}.{extension}"
+
+    # Full save path
+    full_path = os.path.join(output_dir, filename)
+
+    df = pd.read_excel(full_path)
+    return df
+
 
 
 
@@ -35,77 +68,76 @@ df_parts = df_parts.loc[df_parts['Year-Month'] <= last_day_prev_month_str]
 special_bikes = ['Cosmo 2.0 T - Black- 48v 15 Ah', 'Cosmo 2.0 T - Calypso - 48v 15 Ah']
 
 
+forecasting_category = input("Enter forecasting category Product, Sales, Operations (p/s/o): ")
+
+#go into product forecasting
+if forecasting_category == 'p': #go into products
+    print("Product Forecasting Category Chosen.")
+    product_category = input("Enter product category Bikes, Parts, Accessories (b/p/a): ")
+    if product_category == 'b': #go into bikes
+        print("Product Category Bikes Chosen.")
+        bike_category = input("Enter bike category Specific SKU or Bike Type (s/b): ")
+        if bike_category == 's': #go into specific bike SKU
+
+            user_input = input("Enter bike name or partial name: ")
+            bike_names = df_bikes_descriptions['ProductDescription'].unique().tolist()
+            product_name = display_matches(user_input=user_input, choices=bike_names)
+            reload_dash_app = input("Start brand new dash app? (y/n): ")
+            path = os.path.join("Product_Forecasting", "Bikes", "Bike_SKUs")
 
 
-# print(df_bikes_descriptions)
-# print(df_bikes_descriptions['ProductDescription'].unique().tolist())
-bike_names = df_bikes_descriptions['ProductDescription'].unique().tolist()
+            if reload_dash_app == "y":
+                value_string = 'OrderQuantity'
+                retrain = False
 
-user_input = input("Enter bike name or partial name: ")
-matches = find_best_matches(user_input, bike_names)
-print(matches)
+                poll_forecast = [0, 0, 0, 0, 0, 0]
+                forecast_horizon = 6
 
-if matches:
-    print("\nTop matches:")
-    for i, name in enumerate(matches, 1):
-        print(f"{i}. {name}")
-else:
-    print("No close matches found.")
+                #Cosmo black
+                if product_name ==  'Cosmo 2.0 T - Black- 48v 15 Ah':
+                    print("hit Costco")
+                    cosmo_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah'].reset_index(drop=True)
+                    lowrider_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Low rider 2.0 - Black-Copper - 48v 15Ah'].reset_index(drop=True)
+                    dash_cosmo_black_bike_launch(cosmo_black_bike=cosmo_black_bike, lowrider_black_bike=lowrider_black_bike, product_name=product_name, value_string=value_string, path=path, forecast_horizon=forecast_horizon)
 
-product_name = matches[int(input("Enter number for final product name: ")) - 1]
+                #Cosmo calypso
+                elif product_name == 'Cosmo 2.0 T - Calypso - 48v 15 Ah':
+                    print("Calypso hit")
+                    scaler = 0.15
+                    cosmo_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah'].reset_index(drop=True)
+                    lowrider_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Low rider 2.0 - Black-Copper - 48v 15Ah'].reset_index(drop=True)
+                    #adjust data
+                    cosmo_black_bike['OrderQuantity'] = scaler * cosmo_black_bike['OrderQuantity']
+                    lowrider_black_bike['OrderQuantity'] = scaler * lowrider_black_bike['OrderQuantity']
 
-reload_dash_app = input("Start brand new dash app? (y/n): ")
+                    dash_cosmo_calypso_bike_launch(cosmo_black_bike=cosmo_black_bike, lowrider_black_bike=lowrider_black_bike, product_name=product_name, value_string=value_string, path=path, forecast_horizon=forecast_horizon)
 
+                #Other bikes
+                else:
+                    product_series = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == product_name].reset_index(drop=True)
+                    dash_bike_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name, value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon, SKU_or_type='ProductDescription')
 
-if reload_dash_app == "y":
-    #have all of these be user input
-    # product_name = 'Ranger 2.0 - BLK/WHT - 48V 20Ah'
-    value_string = 'OrderQuantity'
-    retrain = False
-    path = 'Bike_Descriptions'
-    poll_forecast = [1, 2, 3, 4, 5, 6]
-    forecast_horizon = 6
+            else:
+                df = reload_df_for_dash(product_name=product_name, path=path)
+                dash_bike_reload(df, product_name, path)
 
-    #Cosmo black
-    if product_name ==  'Cosmo 2.0 T - Black- 48v 15 Ah':
-        print("hit Costco")
-        cosmo_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah'].reset_index(drop=True)
-        lowrider_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Low rider 2.0 - Black-Copper - 48v 15Ah'].reset_index(drop=True)
-        dash_cosmo_black_bike_launch(cosmo_black_bike=cosmo_black_bike, lowrider_black_bike=lowrider_black_bike, product_name=product_name, value_string=value_string, path=path, forecast_horizon=forecast_horizon)
+        else: #go into specific bike type
+            user_input = input("Enter bike type name or partial name: ")
+            bike_names = df_bikes['Bike_type'].unique().tolist()
+            product_name = display_matches(user_input=user_input, choices=bike_names)
+            reload_dash_app = input("Start brand new dash app? (y/n): ")
+            path = os.path.join("Product_Forecasting", "Bikes", "Bike_types")
 
-    #Cosmo calypso
-    elif product_name == 'Cosmo 2.0 T - Calypso - 48v 15 Ah':
-        print("Calypso hit")
-        scaler = 0.15
-        cosmo_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah'].reset_index(drop=True)
-        lowrider_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Low rider 2.0 - Black-Copper - 48v 15Ah'].reset_index(drop=True)
-        #adjust data
-        cosmo_black_bike['OrderQuantity'] = scaler * cosmo_black_bike['OrderQuantity']
-        lowrider_black_bike['OrderQuantity'] = scaler * lowrider_black_bike['OrderQuantity']
+            if reload_dash_app == "y": #go into dash app
+                value_string = 'OrderQuantity'
+                retrain = False
 
-        dash_cosmo_calypso_bike_launch(cosmo_black_bike=cosmo_black_bike, lowrider_black_bike=lowrider_black_bike, product_name=product_name, value_string=value_string, path=path, forecast_horizon=forecast_horizon)
+                poll_forecast = [0, 0, 0, 0, 0, 0]
+                forecast_horizon = 6
 
-    #Other bikes
-    else:
-        product_series = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == product_name].reset_index(drop=True)
-        dash_bike_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name, value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
+                product_series = df_bikes.loc[df_bikes['Bike_type'] == product_name].reset_index(drop=True)
+                dash_bike_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name, value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon, SKU_or_type='Bike_type')
 
-else:
-    path_segment = 'Product_Forecast'
-    filename_suffix = "consensus_data"
-    extension = "xlsx"
-
-    # Build dynamic output path
-    output_dir = os.path.join(r"C:\Users\joshu\Documents\DASH", path_segment)
-
-    # Clean filename components
-    safe_product_name = product_name.replace("/", "_").replace(":", "_")
-    filename = f"{safe_product_name}_{filename_suffix}.{extension}"
-
-    # Full save path
-    full_path = os.path.join(output_dir, filename)
-
-    df = pd.read_excel(full_path)
-
-    dash_bike_reload(df, product_name)
-
+            else:
+                df = reload_df_for_dash(product_name=product_name, path=path)
+                dash_bike_reload(df, product_name, path)

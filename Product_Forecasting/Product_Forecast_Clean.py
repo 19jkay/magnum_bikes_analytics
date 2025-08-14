@@ -105,7 +105,7 @@ def Unleashed_product_forecast_data(start_date, end_date, reload=True, save_exce
     df_parts = df.loc[df['ProductGroup'].isin(parts_groups)]
     df_parts = df_parts.groupby(['Year-Month'])[['OrderQuantity', 'LineTotal']].sum().reset_index()
 
-    df_bikes = df.loc[df['ProductGroup'] == 'Bikes']
+    df_bikes = df.loc[df['ProductGroup'] == 'Bikes'].copy()
     df_bikes['Bike_type'] = df_bikes['ProductDescription'].str.extract(r'^\s*(.*?)\s*-\s*')
     df_bikes = df_bikes.groupby(['Year-Month', 'Bike_type'])[['OrderQuantity', 'LineTotal']].sum().reset_index()
 

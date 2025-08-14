@@ -8,56 +8,58 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
-# def cosmo_dash(cosmo_black_forecast_series, poll_forecast, product_name):
-#     import matplotlib
-#     matplotlib.use('Agg')
-#
-#     today_str, last_day_prev_month_str = get_date_info()
-#
-#     start_date = cosmo_black_forecast_series.start_time().strftime('%Y-%m-%d')
-#     end_date = cosmo_black_forecast_series.end_time().strftime('%Y-%m-%d')
-#     dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
-#
-#     num_dates = len(dates)
-#
-#
-#     #get stock on hand for cosmo black and calypso
-#     df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
-#
-#     # df_stockonhand_cosmo = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah')
-#     #                                           | (df_stockonhand['ProductDescription'] == 'Cosmo 2.0 T - Calypso - 48v 15 Ah')]
-#     # df_stockonhand_cosmo = df_stockonhand_cosmo[['ProductDescription', 'QtyOnHand']]
-#     #
-#     #
-#     # #get qtyonhand number for cosmo black
-#     # inventory_cosmo_black = df_stockonhand_cosmo.loc[df_stockonhand['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah']['QtyOnHand'].iloc[0]
-#     # inventory_cosmo_calypso = df_stockonhand_cosmo.loc[df_stockonhand['ProductDescription'] == 'Cosmo 2.0 T - Calypso - 48v 15 Ah']['QtyOnHand'].iloc[0]
-#
-#     df_stockonhand_cosmo = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
-#     df_stockonhand_cosmo = df_stockonhand_cosmo[['ProductDescription', 'QtyOnHand']]
-#     inventory_specific_cosmo = df_stockonhand_cosmo.loc[df_stockonhand['ProductDescription'] == product_name]['QtyOnHand'].iloc[0]
-#
-#
-#     #get blank cosmo inventory lists
-#     cosmo_specific_inventory_list = [float(inventory_specific_cosmo)] + [0 for i in range(num_dates - 1)]
-#
-#     # Build the DataFrame
-#     cosmo_black_data = pd.DataFrame({
-#         'Year-Month': dates,
-#         'Analytical Forecast (Kay)': [100] * 6,
-#         'Financial Forecast (Poll)': poll_forecast,
-#         'Inventory': cosmo_specific_inventory_list,
-#         'Ending Inventory': [0, 0, 0, 0, 0, 0],
-#         'Purchases' :  [0, 0, 0, 0, 0, 0]
-#     })
-#
-#     cosmo_black_data['Analytical Forecast (Kay)'] = np.round(cosmo_black_forecast_series.univariate_values(), 2).tolist()
-#     cosmo_black_data['Final Consensus'] = 1 / 2 * (cosmo_black_data['Analytical Forecast (Kay)'] + cosmo_black_data['Financial Forecast (Poll)'])
-#
-#     dash_app(cosmo_black_data, product_name)
+def cosmo_dash(cosmo_black_forecast_series, poll_forecast, final_consensus, inventory, purchases, dates, product_name):
+    import matplotlib
+    matplotlib.use('Agg')
+
+    # today_str, last_day_prev_month_str = get_date_info()
+    #
+    # start_date = cosmo_black_forecast_series.start_time().strftime('%Y-%m-%d')
+    # end_date = cosmo_black_forecast_series.end_time().strftime('%Y-%m-%d')
+    # dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
+    # print("Dates: ", dates)
+    #
+    # num_dates = len(dates)
 
 
-def dash_bike_launch(series, financial_forecast, product_name, value_string, retrain, path, forecast_horizon):
+    #get stock on hand for cosmo black and calypso
+    # df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
+
+    # df_stockonhand_cosmo = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah')
+    #                                           | (df_stockonhand['ProductDescription'] == 'Cosmo 2.0 T - Calypso - 48v 15 Ah')]
+    # df_stockonhand_cosmo = df_stockonhand_cosmo[['ProductDescription', 'QtyOnHand']]
+    #
+    #
+    # #get qtyonhand number for cosmo black
+    # inventory_cosmo_black = df_stockonhand_cosmo.loc[df_stockonhand['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah']['QtyOnHand'].iloc[0]
+    # inventory_cosmo_calypso = df_stockonhand_cosmo.loc[df_stockonhand['ProductDescription'] == 'Cosmo 2.0 T - Calypso - 48v 15 Ah']['QtyOnHand'].iloc[0]
+
+    # df_stockonhand_cosmo = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
+    # df_stockonhand_cosmo = df_stockonhand_cosmo[['ProductDescription', 'QtyOnHand']]
+    # inventory_specific_cosmo = df_stockonhand_cosmo.loc[df_stockonhand['ProductDescription'] == product_name]['QtyOnHand'].iloc[0]
+    #
+
+    #get blank cosmo inventory lists
+    # cosmo_specific_inventory_list = [float(inventory_specific_cosmo)] + [0 for i in range(num_dates - 1)]
+
+    # Build the DataFrame
+    cosmo_black_data = pd.DataFrame({
+        'Year-Month': dates,
+        'Analytical Forecast (Kay)': cosmo_black_forecast_series,
+        'Financial Forecast (Poll)': poll_forecast,
+        'Final Consensus' : final_consensus,
+        'Inventory': inventory,
+        'Ending Inventory': [0, 0, 0, 0, 0, 0],
+        'Purchases' :  purchases
+    })
+
+    # cosmo_black_data['Analytical Forecast (Kay)'] = np.round(cosmo_black_forecast_series.univariate_values(), 2).tolist()
+    # cosmo_black_data['Final Consensus'] = 1 / 2 * (cosmo_black_data['Analytical Forecast (Kay)'] + cosmo_black_data['Financial Forecast (Poll)'])
+
+    dash_app(cosmo_black_data, product_name)
+
+
+def dash_bike_launch(series, financial_forecast, product_name, value_string, retrain, path, forecast_horizon, SKU_or_type):
     import matplotlib
     matplotlib.use('Agg')
 
@@ -69,15 +71,24 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
     start_date = series_forecast.start_time().strftime('%Y-%m-%d')
     end_date = series_forecast.end_time().strftime('%Y-%m-%d')
     dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
-
     num_dates = len(dates)
 
     #get StockOnHand (write code in future to just get stock for product_name, need GUID)
     df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
 
-    df_stockonhand_product = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
-    df_stockonhand_product = df_stockonhand_product[['ProductDescription', 'QtyOnHand']]
-    inventory_specific_product = df_stockonhand_product.loc[df_stockonhand['ProductDescription'] == product_name]['QtyOnHand'].iloc[0]
+
+    # df_stockonhand_product = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
+    # df_stockonhand_product = df_stockonhand_product[['ProductDescription', 'QtyOnHand']]
+    # inventory_specific_product = df_stockonhand_product.loc[df_stockonhand['ProductDescription'] == product_name]['QtyOnHand'].iloc[0]
+
+    df_stockonhand_product = df_stockonhand.loc[(df_stockonhand[SKU_or_type] == product_name)]
+    df_stockonhand_product = df_stockonhand_product[[SKU_or_type, 'QtyOnHand']]
+
+    if SKU_or_type == 'Bike_type':
+        df_stockonhand_product = df_stockonhand_product.groupby(SKU_or_type)['QtyOnHand'].sum().reset_index()
+
+    # inventory_specific_product = df_stockonhand_product.loc[df_stockonhand[SKU_or_type] == product_name]['QtyOnHand'].iloc[0]
+    inventory_specific_product = df_stockonhand_product['QtyOnHand'].iloc[0]
 
     # get blank cosmo inventory lists
     inventory_specific_product_list = [float(inventory_specific_product)] + [0 for i in range(num_dates - 1)]
@@ -97,7 +108,7 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
     #add final consensus column that is average of forecasts
     data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
 
-    dash_app(data, product_name)
+    dash_app(data, product_name, path)
 
 
 def dash_cosmo_black_bike_launch(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon):
@@ -142,7 +153,7 @@ def dash_cosmo_black_bike_launch(cosmo_black_bike, lowrider_black_bike, product_
     # add final consensus column that is average of forecasts
     data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
 
-    dash_app(data, product_name)
+    dash_app(data, product_name, path)
 
 def dash_cosmo_calypso_bike_launch(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon):
     import matplotlib
@@ -185,10 +196,10 @@ def dash_cosmo_calypso_bike_launch(cosmo_black_bike, lowrider_black_bike, produc
     # add final consensus column that is average of forecasts
     data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
 
-    dash_app(data, product_name)
+    dash_app(data, product_name, path)
 
 
 
-def dash_bike_reload(data, product_name):
-    dash_app(data, product_name)
+def dash_bike_reload(data, product_name, path):
+    dash_app(data, product_name, path)
     return

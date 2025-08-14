@@ -70,7 +70,7 @@ def reconstruct_series(trend, seasonal, boot_remainders):
     return boot_series
 
 
-def bootstrap_prediction_interval(transformed_series, model_info, periods, block_size, forecast_horizon, value_string):
+def bootstrap_prediction_interval(transformed_series, model_info, periods, block_size, forecast_horizon, filepath):
 
     #bootstrapping
 
@@ -84,7 +84,7 @@ def bootstrap_prediction_interval(transformed_series, model_info, periods, block
     model_class = getattr(module, model_class_name)
 
     # Load the trained model
-    model = model_class.load(model_info["file_path"])
+    model = model_class.load(filepath)
 
     forecasts = []
     for data in series_list:

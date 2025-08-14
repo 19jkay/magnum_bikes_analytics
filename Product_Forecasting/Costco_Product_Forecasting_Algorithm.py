@@ -60,10 +60,10 @@ def lowrider_forecast(df_lowrider, product_name,  value_string, path, forecast_h
     plt.title(product_name + " Forecast using " + model_name)
 
     # output_dir = r"C:\Users\joshu\Documents\Product_Forecast\" + path
-    output_dir = os.path.join(r"C:\Users\joshu\Documents\Product_Forecast", path)
+    output_dir = os.path.join(r"C:\Users\joshu\Documents\Forecasting", path)
     os.makedirs(output_dir, exist_ok=True)
-    customer_type = path + '_' + safe_product_name
-    filename = f"{customer_type.replace('/', '_').replace(':', '_')}.png"
+    # customer_type = path + '_' + safe_product_name
+    filename = f"{safe_product_name.replace('/', '_').replace(':', '_')}.png"
     filepath = os.path.join(output_dir, filename)
     plt.savefig(filepath, dpi=300)
     plt.close()
@@ -131,10 +131,10 @@ def cosmo_black_forecast(df_cosmo, df_lowrider,  product_name, value_string, pat
     plt.title(product_name + " Forecast using " + model_name)
 
     # output_dir = r"C:\Users\joshu\Documents\Product_Forecast\" + path
-    output_dir = os.path.join(r"C:\Users\joshu\Documents\Product_Forecast", path)
+    output_dir = os.path.join(r"C:\Users\joshu\Documents\Forecasting", path)
     os.makedirs(output_dir, exist_ok=True)
-    customer_type = path + '_' + safe_product_name
-    filename = f"{customer_type.replace('/', '_').replace(':', '_')}.png"
+    # customer_type = path + '_' + safe_product_name
+    filename = f"{safe_product_name.replace('/', '_').replace(':', '_')}.png"
     filepath = os.path.join(output_dir, filename)
     plt.savefig(filepath, dpi=300)
     plt.close()
@@ -207,10 +207,10 @@ def cosmo_calypso_forecast(df_cosmo, df_lowrider,  product_name, value_string, p
     plt.title(product_name + " Forecast using " + model_name)
 
     # output_dir = r"C:\Users\joshu\Documents\Product_Forecast\" + path
-    output_dir = os.path.join(r"C:\Users\joshu\Documents\Product_Forecast", path)
+    output_dir = os.path.join(r"C:\Users\joshu\Documents\Forecasting", path)
     os.makedirs(output_dir, exist_ok=True)
-    customer_type = path + '_' + safe_product_name
-    filename = f"{customer_type.replace('/', '_').replace(':', '_')}.png"
+    # customer_type = path + '_' + safe_product_name
+    filename = f"{safe_product_name.replace('/', '_').replace(':', '_')}.png"
     filepath = os.path.join(output_dir, filename)
     plt.savefig(filepath, dpi=300)
     plt.close()

@@ -20,7 +20,8 @@ print("One year ago: ", one_year_ago_str)
 reload_data = True
 save_excel = False
 #Get TTM (Trailing Twelve Months) data
-df_SalesOrders = Unleashed_SalesOrders_clean_data_parallel(start_date=one_year_ago_str, end_date=today_str, reload=reload_data, save_excel=save_excel)
+start_date = '2020-08-14'
+df_SalesOrders = Unleashed_SalesOrders_clean_data_parallel(start_date=start_date, end_date=today_str, reload=reload_data, save_excel=save_excel)
 print("SalesOrders Loaded")
 
 #Get Stock on Hand data
@@ -34,7 +35,7 @@ df_SalesOrders_grouped = df_SalesOrders.groupby(['ProductCode'])['OrderQuantity'
 df_report = df_report.merge(df_SalesOrders_grouped, on='ProductCode', how='left')
 
 
-df_report['WOH'] = (df_report['QtyOnHand']/df_report['OrderQuantity']) * 52
+df_report['WOH'] = (df_report['QtyOnHand']/df_report['OrderQuantity']) * 52 * 5
 df_report['Total Value'] = df_report['QtyOnHand'] * df_report['AvgCost']
 df_report['ProductGroupName'] = df_report['ProductGroupName'].replace('', 'No Product Group')
 
@@ -51,19 +52,8 @@ df_report = df_report[['Product Group', 'Product Code', 'Product Description', '
 
 # Define the path to your Excel file
 # Set file path
-file_path = fr"C:\Users\joshu\Documents\Reporting\Unleashed_Reports\Inventory_Report.xlsx"
+file_path = fr"C:\Users\joshu\Documents\Reporting\Unleashed_Reports\Inventory_Report_Steve.xlsx"
 with pd.ExcelWriter(file_path, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
     df_report.to_excel(writer, sheet_name="Sheet1", index=False)
 
 print(f"Inventory Report file written to: {file_path}")
-
-
-# file_path = fr"C:\Users\joshu\Documents\Reporting\Unleashed_Reports\Inventory_Report.xlsx"
-# os.makedirs(os.path.dirname(file_path), exist_ok=True)
-# df_report.to_excel(file_path, index=False)
-# print(f"Inventory Report file written to: {file_path}")
-
-
-
-
-

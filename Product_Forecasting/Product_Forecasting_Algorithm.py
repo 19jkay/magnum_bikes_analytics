@@ -103,10 +103,10 @@ def forecast(df, product_name,  value_string, path, retrain=False, forecast_hori
 
         # cannot do prediction intervals for NaiveSeasonal
         if model_name == "NaiveSeasonal":
-            customer_type = path + '_' + safe_product_name
-            output_dir_model = os.path.join(r"C:\Users\joshu\Documents\Product_Forecast", path, "models")
+            # customer_type = path + '_' + safe_product_name
+            output_dir_model = os.path.join(r"C:\Users\joshu\Documents\Forecasting", path, "models")
             os.makedirs(output_dir_model, exist_ok=True)
-            filename = f"{customer_type.replace('/', '_').replace(':', '_')}.pkl"
+            filename = f"{safe_product_name.replace('/', '_').replace(':', '_')}.pkl"
             model_path = os.path.join(output_dir_model, filename)
             # Save metadata to help reload later
             # Save the trained model
@@ -141,10 +141,10 @@ def forecast(df, product_name,  value_string, path, retrain=False, forecast_hori
         plt.title(product_name + " Forecast using " + model_name)
 
         # output_dir = r"C:\Users\joshu\Documents\Product_Forecast\" + path
-        output_dir = os.path.join(r"C:\Users\joshu\Documents\Product_Forecast", path)
+        output_dir = os.path.join(r"C:\Users\joshu\Documents\Forecasting", path)
         os.makedirs(output_dir, exist_ok=True)
         customer_type = path + '_' + safe_product_name
-        filename = f"{customer_type.replace('/', '_').replace(':', '_')}.png"
+        filename = f"{safe_product_name.replace('/', '_').replace(':', '_')}.png"
         filepath = os.path.join(output_dir, filename)
         plt.savefig(filepath, dpi=300)
         plt.close()
@@ -152,10 +152,10 @@ def forecast(df, product_name,  value_string, path, retrain=False, forecast_hori
 
 
         # Define output directory and filename
-        output_dir_model = os.path.join(r"C:\Users\joshu\Documents\Product_Forecast", path, "models")
+        output_dir_model = os.path.join(r"C:\Users\joshu\Documents\Forecasting", path, "models")
         os.makedirs(output_dir_model, exist_ok=True)
 
-        filename = f"{customer_type.replace('/', '_').replace(':', '_')}.pkl"
+        filename = f"{safe_product_name.replace('/', '_').replace(':', '_')}.pkl"
         model_path = os.path.join(output_dir_model, filename)
 
         # # Save the trained model
@@ -175,9 +175,10 @@ def forecast(df, product_name,  value_string, path, retrain=False, forecast_hori
         print("Loading...")
 
         # Construct the file path
-        output_dir_model = os.path.join(r"C:\Users\joshu\Documents\Product_Forecast", path, "models")
-        customer_type = path + '_' + safe_product_name
-        filename = f"{customer_type.replace('/', '_').replace(':', '_')}.pkl"
+        output_dir_model = os.path.join(r"C:\Users\joshu\Documents\Forecasting", path, "models")
+        # customer_type = path + '_' + safe_product_name
+        # filename = f"{customer_type.replace('/', '_').replace(':', '_')}.pkl"
+        filename = f"{safe_product_name.replace('/', '_').replace(':', '_')}.pkl"
         filepath = os.path.join(output_dir_model, filename)
 
         # Load metadata
@@ -189,9 +190,13 @@ def forecast(df, product_name,  value_string, path, retrain=False, forecast_hori
         module = importlib.import_module("darts.models")
         model_class = getattr(module, model_class_name)
 
-        # Load the trained model
-        loaded_model = model_class.load(model_info["file_path"])
+        # Load the trained model (this is the old .pkl file path (not info))
+        loaded_model = model_class.load(filepath)
 
+        #Retrain the loaded model
+        # print("Training Model...")
+        loaded_model.fit(transformed_series)
+        # print("Model Trained.")
 
         forecast_transformed = loaded_model.predict(forecast_horizon)
 
@@ -200,7 +205,7 @@ def forecast(df, product_name,  value_string, path, retrain=False, forecast_hori
         if model_name == "NaiveEnsembleModel":
             block_size = 7
             periods = 13
-            forecast_ci_transformed = bootstrap_prediction_interval(transformed_series, model_info, periods, block_size, forecast_horizon,value_string)
+            forecast_ci_transformed = bootstrap_prediction_interval(transformed_series, model_info, periods, block_size, forecast_horizon, filepath)
             forecast_transformed = forecast_ci_transformed.mean(axis=2)  # overwrite naive forecast with mean of bootstrap
         else:
             forecast_ci_transformed = loaded_model.predict(forecast_horizon, num_samples=1000)
@@ -211,9 +216,21 @@ def forecast(df, product_name,  value_string, path, retrain=False, forecast_hori
         forecast_ci = transformer.inverse_transform(forecast_ci_transformed) - 2
         series = series - 2
 
-        # series.plot()
-        # forecast.plot()
-        # plt.title("Did it")
-        # plt.show()
+        # plot forecasts
+        series.plot()
+        forecast_ci.plot(label="Forecast", low_quantile=0.05, high_quantile=0.95)
+        plt.legend()
+        plt.xlabel('Year-Month')
+        plt.ylabel(value_string)
+        plt.title(product_name + " Forecast using " + model_name)
+
+        # output_dir = r"C:\Users\joshu\Documents\Product_Forecast\" + path
+        output_dir = os.path.join(r"C:\Users\joshu\Documents\Forecasting", path)
+        os.makedirs(output_dir, exist_ok=True)
+        # customer_type = path + '_' + safe_product_name
+        filename = f"{safe_product_name.replace('/', '_').replace(':', '_')}.png"
+        filepath = os.path.join(output_dir, filename)
+        plt.savefig(filepath, dpi=300)
+        plt.close()
 
     return forecast, forecast_ci

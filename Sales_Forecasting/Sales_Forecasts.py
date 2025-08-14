@@ -14,15 +14,17 @@ from darts.utils.utils import SeasonalityMode, ModelMode, TrendMode
 from Sales_Forecasting.Sales_Forecasting_Clean import *
 from Sales_Forecasting.Sales_Forecasting_Algorithm import *
 
-reload_data = False
-df = Unleashed_sales_forecast_data(start_date='2022-01-01', end_date='2025-06-30', reload=reload_data)
+reload_data = True
+df = Unleashed_sales_forecast_data(start_date='2022-01-01', end_date='2025-07-31', reload=reload_data)
 
 
-RETRAIN = False
+RETRAIN = True
 
-customer_types = ['Wholesale', 'Retail']
+# customer_types = ['Wholesale', 'Retail']
+customer_types = df['CustomerType'].unique().tolist()
 for customer_type in customer_types:
     one_customer_type = df.loc[df['CustomerType'] == customer_type].reset_index(drop=True)
+    print(one_customer_type)
     forecast(one_customer_type, customer_type=customer_type, value_string='LineTotal', retrain=RETRAIN, path=customer_type)
 
 
