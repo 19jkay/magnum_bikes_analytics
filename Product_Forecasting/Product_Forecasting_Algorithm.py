@@ -117,9 +117,10 @@ def forecast(df, product_name,  value_string, path, retrain=False, forecast_hori
                 "class_name": best_model.__class__.__name__,
                 "file_path": model_path
             }
+            # model_info = model_path
             block_size = 7
             periods = 13
-            forecast_ci_transformed = bootstrap_prediction_interval(transformed_series, model_info, periods, block_size, forecast_horizon, value_string)
+            forecast_ci_transformed = bootstrap_prediction_interval(transformed_series, model_info, periods, block_size, forecast_horizon, model_path)
             forecast_transformed = forecast_ci_transformed.mean(axis=2) #overwrite naive forecast with mean of bootstrap
         else:
             forecast_ci_transformed = best_model.predict(forecast_horizon, num_samples=1000)

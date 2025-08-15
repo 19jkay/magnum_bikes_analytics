@@ -1,25 +1,39 @@
 # from rapidfuzz import process
 from rapidfuzz import fuzz, process
 
-
 from Product_Forecasting.Product_Forecast_Clean import *
 from DASH.DASH_main import dash_bike_launch, dash_parts_launch, dash_accessories_launch, dash_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, cosmo_dash
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
 
 
-# def find_best_matches(user_input, choices, limit=10, threshold=60):
-#     matches = process.extract(user_input, choices, limit=limit, score_cutoff=threshold)
-#     return [match[0] for match in matches]
 
-def find_best_matches(user_input, choices, limit=10, threshold=60, method='token_set_ratio'):
-    scorer = {
-        'token_sort_ratio': fuzz.token_sort_ratio,
-        'token_set_ratio': fuzz.token_set_ratio,
-        'ratio': fuzz.ratio
-    }.get(method, fuzz.token_set_ratio)
+def find_best_matches(user_input, choices, limit=10):
+    def score(choice):
+        # Normalize
+        input_lower = user_input.lower()
+        choice_lower = choice.lower()
 
-    matches = process.extract(user_input, choices, scorer=scorer, limit=limit, score_cutoff=threshold)
-    return [match[0] for match in matches]
+        # Positional match score
+        positional_score = sum(
+            1 for i, c in enumerate(input_lower)
+            if i < len(choice_lower) and choice_lower[i] == c
+        )
+
+        # Total shared letters score
+        shared_letters = set(input_lower) & set(choice_lower)
+        shared_score = sum(min(input_lower.count(ch), choice_lower.count(ch)) for ch in shared_letters)
+
+        # Weighted total score
+        return positional_score * 2 + shared_score  # tweak weights as needed
+
+    # Score all choices
+    scored = [(choice, score(choice)) for choice in choices]
+    # Sort by score descending
+    sorted_choices = sorted(scored, key=lambda x: x[1], reverse=True)
+    # Return top matches
+    return [choice for choice, _ in sorted_choices[:limit]]
+
+
 
 
 def display_matches(user_input, choices):
@@ -54,27 +68,23 @@ def reload_df_for_dash(product_name, path):
     df = pd.read_excel(full_path)
     return df
 
-def get_product_data(reload_data, save_excel):
+def get_all_product_data(reload_data, save_excel):
     # get date info
     today_str, last_day_prev_month_str = get_date_info()
 
     # load data
-    df_bikes_list, df_accessories_list, df_parts = Unleashed_product_forecast_data(start_date='2022-01-01',
+    df_bikes, df_bikes_descriptions, df_parts, df_accessories = Unleashed_get_all_product_forecast_data(start_date='2022-01-01',
                                                                                    end_date=last_day_prev_month_str,
                                                                                    reload=reload_data,
                                                                                    save_excel=save_excel)
-    # organize data
-    df_accessories_top_5, df_accessories_other = df_accessories_list[0], df_accessories_list[1]
-    df_bikes, df_bikes_descriptions = df_bikes_list[0], df_bikes_list[1]
 
     # ensure data is truncated at last day of last month
     df_bikes = df_bikes.loc[df_bikes['Year-Month'] <= last_day_prev_month_str]
     df_bikes_descriptions = df_bikes_descriptions.loc[df_bikes_descriptions['Year-Month'] <= last_day_prev_month_str]
-    df_accessories_top_5 = df_accessories_top_5.loc[df_accessories_top_5['Year-Month'] <= last_day_prev_month_str]
-    df_accessories_other = df_accessories_other.loc[df_accessories_other['Year-Month'] <= last_day_prev_month_str]
     df_parts = df_parts.loc[df_parts['Year-Month'] <= last_day_prev_month_str]
+    df_accessories = df_accessories.loc[df_accessories['Year-Month'] <= last_day_prev_month_str]
 
-    return df_bikes, df_bikes_descriptions, df_accessories_top_5, df_accessories_other, df_parts
+    return df_bikes, df_bikes_descriptions, df_parts, df_accessories
 
 
 def get_bikes_product_data(reload_data, save_excel):
@@ -97,6 +107,13 @@ def get_accessories_product_data(reload_data, save_excel):
     df_accessories = Unleashed_accessories_product_forecast_data(start_date='2022-01-01', end_date=last_day_prev_month_str, reload=reload_data, save_excel=save_excel)
     df_accessories = df_accessories.loc[df_accessories['Year-Month'] <= last_day_prev_month_str]
     return df_accessories
+
+
+load_all_data_input = input("Would you like to reload all product data? (y/n): ")
+if load_all_data_input == "y":
+    print("Reloading all product data (this could take a few minutes)...")
+    a, b, c, d = get_all_product_data(True, True)
+    print("All product data reloaded!")
 
 
 
