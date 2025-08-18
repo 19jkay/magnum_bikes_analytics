@@ -2,7 +2,7 @@
 from rapidfuzz import fuzz, process
 
 from Product_Forecasting.Product_Forecast_Clean import *
-from DASH.DASH_main import dash_bike_launch, dash_parts_launch, dash_accessories_launch, dash_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, cosmo_dash
+from DASH.DASH_main import dash_bike_launch, dash_parts_launch, dash_parts_other_launch, dash_accessories_launch, dash_accessories_other_launch, dash_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, cosmo_dash
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
 
 
@@ -102,9 +102,21 @@ def get_parts_product_data(reload_data, save_excel):
     df_parts = df_parts.loc[df_parts['Year-Month'] <= last_day_prev_month_str]
     return df_parts
 
+def get_other_parts_product_data(top_parts, reload_data, save_excel):
+    today_str, last_day_prev_month_str = get_date_info()
+    df_parts = Unleashed_parts_other_product_forecast_data(top_parts=top_parts, start_date='2022-01-01', end_date=last_day_prev_month_str, reload=reload_data,save_excel=save_excel)
+    df_parts = df_parts.loc[df_parts['Year-Month'] <= last_day_prev_month_str]
+    return df_parts
+
 def get_accessories_product_data(reload_data, save_excel):
     today_str, last_day_prev_month_str = get_date_info()
     df_accessories = Unleashed_accessories_product_forecast_data(start_date='2022-01-01', end_date=last_day_prev_month_str, reload=reload_data, save_excel=save_excel)
+    df_accessories = df_accessories.loc[df_accessories['Year-Month'] <= last_day_prev_month_str]
+    return df_accessories
+
+def get_other_accessories_product_data(top_accessories, reload_data, save_excel):
+    today_str, last_day_prev_month_str = get_date_info()
+    df_accessories = Unleashed_accessories_other_product_forecast_data(top_accessories=top_accessories, start_date='2022-01-01', end_date=last_day_prev_month_str, reload=reload_data,save_excel=save_excel)
     df_accessories = df_accessories.loc[df_accessories['Year-Month'] <= last_day_prev_month_str]
     return df_accessories
 
@@ -200,55 +212,126 @@ if forecasting_category == 'p': #go into products
                 dash_reload(df, product_name, path)
 
     elif product_category == 'p': #go into parts
+        parts_input = input("Would you like to forecast a specific part or  non-top parts? (s/n): ")
         print("Product Category \"Parts\" Chosen.")
         df_parts = get_parts_product_data(reload_data=reload_data, save_excel=save_excel)
+        if parts_input == 's':
 
-        user_input = input("Enter part name or partial name: ")
-        part_names = df_parts['ProductDescription'].unique().tolist()
-        product_name = display_matches(user_input=user_input, choices=part_names)
-        reload_dash_app = input("Start brand new dash app? (y/n): ")
-        path = os.path.join("Product_Forecasting", "Parts", "Part_SKUs")
+            user_input = input("Enter part name or partial name: ")
+            part_names = df_parts['ProductDescription'].unique().tolist()
+            product_name = display_matches(user_input=user_input, choices=part_names)
+            reload_dash_app = input("Start brand new dash app? (y/n): ")
+            path = os.path.join("Product_Forecasting", "Parts", "Part_SKUs")
 
-        if reload_dash_app == "y":
-            value_string = 'OrderQuantity'
-            retrain_input = input("Does the model need to be trained and validated? (y/n): ")
-            if retrain_input == "y": retrain = True
-            else: retrain = False
+            if reload_dash_app == "y":
+                value_string = 'OrderQuantity'
+                retrain_input = input("Does the model need to be trained and validated? (y/n): ")
+                if retrain_input == "y": retrain = True
+                else: retrain = False
 
-            poll_forecast = [0, 0, 0, 0, 0, 0]
-            forecast_horizon = 6
+                poll_forecast = [0, 0, 0, 0, 0, 0]
+                forecast_horizon = 6
 
-            product_series = df_parts.loc[df_parts['ProductDescription'] == product_name].reset_index(drop=True)
-            dash_parts_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name,value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
+                product_series = df_parts.loc[df_parts['ProductDescription'] == product_name].reset_index(drop=True)
+                dash_parts_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name,value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
 
-        else:
-            df = reload_df_for_dash(product_name=product_name, path=path)
-            dash_reload(df, product_name, path)
+            else:
+                df = reload_df_for_dash(product_name=product_name, path=path)
+                dash_reload(df, product_name, path)
+        else: #go into other parts
+            num_input = int(input("How many parts would you like to remove from non-top parts?: "))
+            parts_to_remove_list = []
+            for _ in range(num_input):
+                user_input = input("Enter part name or partial name to be added to list: ")
+                part_names = df_parts['ProductDescription'].unique().tolist()
+                product_name = display_matches(user_input=user_input, choices=part_names)
+                parts_to_remove_list.append(product_name)
+            print("Getting all parts data except ones entered. This could take a few minutes...")
+            df_parts_other = get_other_parts_product_data(parts_to_remove_list, reload_data=True, save_excel=True)
+
+            reload_dash_app = input("Start brand new dash app? (y/n): ")
+            path = os.path.join("Product_Forecasting", "Parts", "Parts_other")
+            product_name = "parts_other"
+
+            if reload_dash_app == "y":  # go into dash app
+                value_string = 'OrderQuantity'
+                retrain_input = input("Does the model need to be trained and validated? (y/n): ")
+                if retrain_input == "y": retrain = True
+                else: retrain = False
+
+                poll_forecast = [0, 0, 0, 0, 0, 0]
+                forecast_horizon = 6
+
+                product_series = df_parts_other
+                dash_parts_other_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name,value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon, top_parts=parts_to_remove_list)
+
+
+            else:
+                df = reload_df_for_dash(product_name=product_name, path=path)
+                dash_reload(df, product_name, path)
+
+
 
     else: #go into accessories
         print("Product Category \"Accessories\" Chosen.")
+        accessories_input = input("Would you like to forecast a specific accessory or non-top accessories? (s/n): ")
         df_accessories = get_accessories_product_data(reload_data=reload_data, save_excel=save_excel)
+        if accessories_input == 's':
 
-        user_input = input("Enter accessory name or partial name: ")
-        accessory_names = df_accessories['ProductDescription'].unique().tolist()
-        product_name = display_matches(user_input=user_input, choices=accessory_names)
-        reload_dash_app = input("Start brand new dash app? (y/n): ")
-        path = os.path.join("Product_Forecasting", "Accessories", "Accessory_SKUs")
+            user_input = input("Enter accessory name or partial name: ")
+            accessory_names = df_accessories['ProductDescription'].unique().tolist()
+            product_name = display_matches(user_input=user_input, choices=accessory_names)
+            reload_dash_app = input("Start brand new dash app? (y/n): ")
+            path = os.path.join("Product_Forecasting", "Accessories", "Accessory_SKUs")
 
-        if reload_dash_app == "y":
-            value_string = 'OrderQuantity'
-            retrain_input = input("Does the model need to be trained and validated? (y/n): ")
-            if retrain_input == "y": retrain = True
-            else: retrain = False
+            if reload_dash_app == "y":
+                value_string = 'OrderQuantity'
+                retrain_input = input("Does the model need to be trained and validated? (y/n): ")
+                if retrain_input == "y": retrain = True
+                else: retrain = False
 
-            poll_forecast = [0, 0, 0, 0, 0, 0]
-            forecast_horizon = 6
+                poll_forecast = [0, 0, 0, 0, 0, 0]
+                forecast_horizon = 6
 
-            product_series = df_accessories.loc[df_accessories['ProductDescription'] == product_name].reset_index(drop=True)
-            dash_accessories_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name,value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
+                product_series = df_accessories.loc[df_accessories['ProductDescription'] == product_name].reset_index(drop=True)
+                dash_accessories_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name,value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
 
-        else:
-            df = reload_df_for_dash(product_name=product_name, path=path)
-            dash_reload(df, product_name, path)
+            else:
+                df = reload_df_for_dash(product_name=product_name, path=path)
+                dash_reload(df, product_name, path)
+
+        else: #go into non-top accessories
+            num_input = int(input("How many accessories would you like to remove from non-top parts?: "))
+            accessories_to_remove_list = []
+            for _ in range(num_input):
+                user_input = input("Enter accessory name or partial name to be added to list: ")
+                accessory_names = df_accessories['ProductDescription'].unique().tolist()
+                product_name = display_matches(user_input=user_input, choices=accessory_names)
+                accessories_to_remove_list.append(product_name)
+            print("Getting all accessory data except ones entered. This could take a few minutes...")
+            df_accessories_other = get_other_accessories_product_data(accessories_to_remove_list, reload_data=True, save_excel=True)
+
+            reload_dash_app = input("Start brand new dash app? (y/n): ")
+            path = os.path.join("Product_Forecasting", "Accessories", "Accessories_other")
+            product_name = "accessories_other"
+
+            if reload_dash_app == "y":  # go into dash app
+                value_string = 'OrderQuantity'
+                retrain_input = input("Does the model need to be trained and validated? (y/n): ")
+                if retrain_input == "y":
+                    retrain = True
+                else:
+                    retrain = False
+
+                poll_forecast = [0, 0, 0, 0, 0, 0]
+                forecast_horizon = 6
+
+                product_series = df_accessories_other
+                dash_accessories_other_launch(series=product_series, financial_forecast=poll_forecast,
+                                        product_name=product_name, value_string=value_string, retrain=retrain,
+                                        path=path, forecast_horizon=forecast_horizon, top_accessories=accessories_to_remove_list)
 
 
+            else:
+                df = reload_df_for_dash(product_name=product_name, path=path)
+                dash_reload(df, product_name, path)

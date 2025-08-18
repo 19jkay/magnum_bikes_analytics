@@ -251,6 +251,65 @@ def dash_parts_launch(series, financial_forecast, product_name, value_string, re
     dash_app(data, product_name, path)
 
 
+def dash_parts_other_launch(series, financial_forecast, product_name, value_string, retrain, path, forecast_horizon, top_parts):
+    import matplotlib
+    matplotlib.use('Agg')
+
+    today_str, last_day_prev_month_str = get_date_info()
+
+    #get forecast
+    series_forecast, series_forecast_ci = forecast(series, product_name=product_name, value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
+    #get forecast dates
+    start_date = series_forecast.start_time().strftime('%Y-%m-%d')
+    end_date = series_forecast.end_time().strftime('%Y-%m-%d')
+    dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
+    num_dates = len(dates)
+
+    #get StockOnHand (write code in future to just get stock for product_name, need GUID)
+    df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
+
+    parts_groups = ['Battery',
+                    'Bottom Brackets', 'Brakes', 'Chargers',
+                    'Cockpit', 'Controllers', 'Conversion Kit', 'Derailleur Hangers',
+                    'Displays', 'Drivetrain', 'Electronics', 'Fenders', 'Forks', 'Frame',
+                    'Headset', 'Lights', 'Motor Wheels', 'Motors',
+                    'Racks', 'Scooters', 'Shifters', 'Throttles', 'Tires', 'Tubes',
+                    'Wheels', 'Derailleurs']
+
+    df_stockonhand = df_stockonhand.loc[df_stockonhand['ProductGroupName'].isin(parts_groups)]
+    df_stockonhand = df_stockonhand.loc[~df_stockonhand['ProductDescription'].isin(top_parts)]
+    print("before: ", df_stockonhand)
+    inventory_parts_other = df_stockonhand['QtyOnHand'].sum()
+
+
+
+    # df_stockonhand_product = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
+    # df_stockonhand_product = df_stockonhand_product[['ProductDescription', 'QtyOnHand']]
+    #
+    # # inventory_specific_product = df_stockonhand_product.loc[df_stockonhand[SKU_or_type] == product_name]['QtyOnHand'].iloc[0]
+    # inventory_specific_product = df_stockonhand_product['QtyOnHand'].iloc[0]
+
+    # get blank cosmo inventory lists
+    inventory_specific_product_list = [float(inventory_parts_other)] + [0 for i in range(num_dates - 1)]
+
+    analytical_forecast = np.round(series_forecast.univariate_values(), 2).tolist()
+
+    # Fill the DataFrame
+    data = pd.DataFrame({
+        'Year-Month': dates,
+        'Analytical Forecast (Kay)': analytical_forecast,
+        'Financial Forecast (Poll)': financial_forecast,
+        'Inventory': inventory_specific_product_list,
+        'Ending Inventory': [0, 0, 0, 0, 0, 0],
+        'Purchases': [0, 0, 0, 0, 0, 0]
+    })
+
+    #add final consensus column that is average of forecasts
+    data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
+
+    dash_app(data, product_name, path)
+
+
 
 def dash_accessories_launch(series, financial_forecast, product_name, value_string, retrain, path, forecast_horizon):
     import matplotlib
@@ -282,6 +341,52 @@ def dash_accessories_launch(series, financial_forecast, product_name, value_stri
 
     # get blank cosmo inventory lists
     inventory_specific_product_list = [float(inventory_specific_product)] + [0 for i in range(num_dates - 1)]
+
+    analytical_forecast = np.round(series_forecast.univariate_values(), 2).tolist()
+
+    # Fill the DataFrame
+    data = pd.DataFrame({
+        'Year-Month': dates,
+        'Analytical Forecast (Kay)': analytical_forecast,
+        'Financial Forecast (Poll)': financial_forecast,
+        'Inventory': inventory_specific_product_list,
+        'Ending Inventory': [0, 0, 0, 0, 0, 0],
+        'Purchases': [0, 0, 0, 0, 0, 0]
+    })
+
+    #add final consensus column that is average of forecasts
+    data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
+
+    dash_app(data, product_name, path)
+
+
+
+def dash_accessories_other_launch(series, financial_forecast, product_name, value_string, retrain, path, forecast_horizon, top_accessories):
+    import matplotlib
+    matplotlib.use('Agg')
+
+    today_str, last_day_prev_month_str = get_date_info()
+
+    #get forecast
+    series_forecast, series_forecast_ci = forecast(series, product_name=product_name, value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
+    #get forecast dates
+    start_date = series_forecast.start_time().strftime('%Y-%m-%d')
+    end_date = series_forecast.end_time().strftime('%Y-%m-%d')
+    dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
+    num_dates = len(dates)
+
+    #get StockOnHand (write code in future to just get stock for product_name, need GUID)
+    df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
+
+
+    df_stockonhand = df_stockonhand.loc[(df_stockonhand['ProductGroupName'] == 'Accessories') | (df_stockonhand['ProductGroupName'] == 'Accessories SLC Store')]
+    df_stockonhand = df_stockonhand.loc[~df_stockonhand['ProductDescription'].isin(top_accessories)]
+    print("before: ", df_stockonhand)
+    inventory_accessories_other = df_stockonhand['QtyOnHand'].sum()
+
+
+    # get blank cosmo inventory lists
+    inventory_specific_product_list = [float(inventory_accessories_other)] + [0 for i in range(num_dates - 1)]
 
     analytical_forecast = np.round(series_forecast.univariate_values(), 2).tolist()
 
