@@ -1,7 +1,9 @@
 from rapidfuzz import process
 
 from Product_Forecasting.Product_Forecast_Clean import *
-from DASH.DASH_main import dash_bike_launch, dash_bike_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, cosmo_dash
+# from DASH.DASH_main import dash_bike_launch, dash_bike_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, cosmo_dash
+from DASH.DASH_main import dash_bike_launch, dash_parts_launch, dash_parts_other_launch, dash_accessories_launch, dash_accessories_other_launch, dash_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, cosmo_dash
+
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
 
 
@@ -113,7 +115,7 @@ if presentation == 'n':
 
         df = pd.read_excel(full_path)
 
-        dash_bike_reload(df, product_name)
+        dash_reload(df, product_name)
 
 else:
     product = input("Would you like to view Cosmo black or calypso? (b/c): ")
@@ -146,7 +148,7 @@ else:
 
             df = pd.read_excel(full_path)
 
-            dash_bike_reload(df, product_name)
+            dash_reload(df, product_name)
 
     #start calypso
     else:
@@ -178,7 +180,7 @@ else:
 
             df = pd.read_excel(full_path)
 
-            dash_bike_reload(df, product_name)
+            dash_reload(df, product_name)
 
 
 

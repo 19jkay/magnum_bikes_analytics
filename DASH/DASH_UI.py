@@ -161,9 +161,8 @@ if forecasting_category == 'p': #go into products
 
                 poll_forecast = [0, 0, 0, 0, 0, 0]
                 forecast_horizon = 6
-
-                #Cosmo black
-                if product_name ==  'Cosmo 2.0 T - Black- 48v 15 Ah':
+                # Cosmo black
+                if product_name == 'Cosmo 2.0 T - Black- 48v 15 Ah':
                     print("hit Costco")
                     cosmo_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah'].reset_index(drop=True)
                     lowrider_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Low rider 2.0 - Black-Copper - 48v 15Ah'].reset_index(drop=True)

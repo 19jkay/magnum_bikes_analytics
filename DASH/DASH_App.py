@@ -1,8 +1,12 @@
 import pandas as pd
-from dash import Dash, dash_table, dcc, html, Input, Output
+# from dash import Dash, dash_table, dcc, html, Input, Output
+from dash import Dash, html, dcc, dash_table, Input, Output, State, ctx
+
 import plotly.graph_objs as go
 import re
 import os
+from datetime import datetime
+
 
 
 
@@ -38,15 +42,73 @@ def update_data(data):
 
     return data
 
+def write_consensus_report(df, product_name, path, selected_month, selected_year):
+    df.set_index('Metric', inplace=True)
+    df = df.T
+    df.index.name = 'Year-Month'
+    df.reset_index(inplace=True)
+    df = df[['Year-Month', 'Final Consensus']]
+
+    extension = "xlsx"
+    file_name = 'All_Forecasts'
+    target_period = f"{selected_year}-{selected_month}"
+    output_dir = os.path.join(r"C:\Users\joshu\Documents\DASH", path)
+    os.makedirs(output_dir, exist_ok=True)  # Ensure directory exists
+    filename = f"{file_name}_{target_period}.{extension}"
+    full_path = os.path.join(output_dir, filename)
+
+    row1 = ['Year-Month'] + df['Year-Month'].tolist()
+    row2 = [product_name] + df['Final Consensus'].tolist()
+    new_data = pd.DataFrame([row1, row2])
+    new_data.index = ['Year-Month', product_name]
+
+    if not os.path.exists(full_path):
+        # File doesn't exist — create new
+        new_data.to_excel(full_path, index=False, header=False)
+
+    else:
+        # File exists — load and update
+        existing_data = pd.read_excel(full_path, header=None)
+
+        # Check if product_name already exists in first column
+        product_rows = existing_data.iloc[:, 0].astype(str)
+        if product_name in product_rows.values:
+            # Update existing row
+            row_index = product_rows[product_rows == product_name].index[0]
+            existing_data.iloc[row_index, 1:] = row2[1:]
+        else:
+            # Append new row
+            existing_data = pd.concat([existing_data, pd.DataFrame([row2])], ignore_index=True)
+
+        # Save updated file
+        existing_data.to_excel(full_path, index=False, header=False)
+
+    # else:
+    #     #load df and write new data to it
+    #     df_reload = pd.read_excel(full_path)
+    #
+    #     if product_name in first column of df_reload:
+    #         update row in df_reload with [product_name] + df['Final Consensus'].tolist()
+    #         save dataframe
+    #     else:
+    #         row = [product_name] + df['Final Consensus'].tolist()
+    #         df_tosave = pd.concat([df_reload, row])
+    #         save_dataframe(df_tosave, output_dir, path)
+
+
+
+
 
 def dash_app(data, product_name, path):
+    import pandas as pd
+    import plotly.graph_objects as go
+    from dash import Dash, html, dcc, dash_table, Input, Output, State, ctx
     import matplotlib
     matplotlib.use('Agg')
 
+    # Preprocess date
     data['Year-Month'] = pd.to_datetime(data['Year-Month'])
-    data['Year-Month'] = data['Year-Month'].dt.to_period('M')
-    data['Year-Month'] = data['Year-Month'].dt.to_timestamp()
-    data['Year-Month'] = data['Year-Month'].dt.strftime('%Y-%m-%d')
+    data['Year-Month'] = data['Year-Month'].dt.to_period('M').dt.to_timestamp().dt.strftime('%Y-%m')
 
     data = update_data(data)
 
@@ -76,6 +138,23 @@ def dash_app(data, product_name, path):
             value=['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory'],
             inline=True
         ),
+
+        html.Div([
+            html.Label("Select Month:"),
+            dcc.Dropdown(
+                id='month-dropdown',
+                options=[{'label': f'{m:02d}', 'value': f'{m:02d}'} for m in range(1, 13)],
+                placeholder='Select month'
+            ),
+            html.Label("Select Year:"),
+            dcc.Dropdown(
+                id='year-dropdown',
+                # options=[{'label': str(y), 'value': str(y)} for y in sorted(data['Year-Month'].str[:4].astype(int).unique())],
+                options=[{'label': str(y), 'value': str(y)} for y in range(2025, 2031)],
+                placeholder='Select year'
+            ),
+            html.Button('Save', id='save-button', n_clicks=0, style={'marginTop': '10px'})
+        ], style={'marginTop': '20px'}),
 
         dcc.Graph(id='line-chart')
     ])
@@ -114,88 +193,97 @@ def dash_app(data, product_name, path):
 
         return fig, updated_transposed.to_dict('records')
 
+    @app.callback(
+        Output('editable-table', 'data', allow_duplicate=True),
+        Input('save-button', 'n_clicks'),
+        State('editable-table', 'data'),
+        State('month-dropdown', 'value'),
+        State('year-dropdown', 'value'),
+        prevent_initial_call=True
+    )
+    def handle_save(n_clicks, table_data, selected_month, selected_year):
+        if not selected_month or not selected_year:
+            raise Dash.exceptions.PreventUpdate
+
+        df = pd.DataFrame(table_data)
+        write_consensus_report(df, product_name, path, selected_month, selected_year)
+
+        return table_data
+
     app.run(debug=False)
 
 
-# def dash_app(data, product_name):
+
+# def dash_app(data, product_name, path):
 #     import matplotlib
 #     matplotlib.use('Agg')
 #
-#     # data['Month'] = data['Year-Month'].dt.strftime('%Y-%m-%d')
-#     # data.drop(columns=['Year-Month'], inplace=True)
 #     data['Year-Month'] = pd.to_datetime(data['Year-Month'])
 #     data['Year-Month'] = data['Year-Month'].dt.to_period('M')
 #     data['Year-Month'] = data['Year-Month'].dt.to_timestamp()
-#     data['Year-Month'] = data['Year-Month'].dt.strftime('%Y-%m-%d')
+#     # data['Year-Month'] = data['Year-Month'].dt.strftime('%Y-%m-%d')
+#     data['Year-Month'] = data['Year-Month'].dt.strftime('%Y-%m')
 #
-#     #update data once to start
 #     data = update_data(data)
 #
-#     data = data[['Year-Month', 'Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory', 'Ending Inventory', 'Purchases']]
-#     # for col in data.columns[1:]:
-#     #     data[col] = pd.to_numeric(data[col], errors='coerce')
+#     metrics = ['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory', 'Ending Inventory', 'Purchases']
+#     data = data[['Year-Month'] + metrics]
 #
-#     # Transpose the data
 #     transposed = data.set_index('Year-Month').T
 #     transposed.reset_index(inplace=True)
 #     transposed.rename(columns={'index': 'Metric'}, inplace=True)
-#     data=transposed.to_dict('records')
-#
 #
 #     app = Dash(__name__)
 #
-#
-#     # Layout with editable table and graph
 #     app.layout = html.Div([
-#         html.H1(product_name + " Forecast Dashboard",
-#                 style={'textAlign': 'center', 'marginBottom': '20px'}),
+#         html.H1(product_name + " Forecast Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
+#
 #         dash_table.DataTable(
 #             id='editable-table',
 #             data=transposed.to_dict('records'),
 #             columns=[{'name': col, 'id': col, 'editable': True} for col in transposed.columns],
 #             style_table={'overflowX': 'auto'}
 #         ),
+#
+#         html.Label("Select metrics to display:"),
+#         dcc.Checklist(
+#             id='metric-selector',
+#             options=[{'label': m, 'value': m} for m in metrics],
+#             value=['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory'],
+#             inline=True
+#         ),
+#
 #         dcc.Graph(id='line-chart')
 #     ])
 #
-#
-#     # Callback to update the graph and recalculate Final Consensus
 #     @app.callback(
 #         Output('line-chart', 'figure'),
 #         Output('editable-table', 'data'),
 #         Input('editable-table', 'data'),
-#         Input('editable-table', 'columns')
+#         Input('editable-table', 'columns'),
+#         Input('metric-selector', 'value')
 #     )
-#     def update_graph_and_table(rows, columns):
+#     def update_graph_and_table(rows, columns, selected_metrics):
 #         df = pd.DataFrame(rows)
 #         df.set_index('Metric', inplace=True)
 #         df = df.T
 #         df.index.name = 'Year-Month'
 #         df.reset_index(inplace=True)
 #
-#         # Convert numeric columns
 #         for col in df.columns[1:]:
 #             df[col] = pd.to_numeric(df[col], errors='coerce')
 #
-#         if 'Analytical Forecast (Kay)' in df.columns and 'Financial Forecast (Poll)' in df.columns and 'Final Consensus' in df.columns and 'Inventory' in df.columns and 'Ending Inventory' in df.columns and 'Purchases' in df.columns:
+#         if all(metric in df.columns for metric in metrics):
 #             df = update_data(df)
-#             # df['Final Consensus'] = 0.5 * (
-#             #         df['Unit Forecast (Kay)'].fillna(0) + df['Unit Forecast (Poll)'].fillna(0)
-#             # )
 #
-#         #save updated data from interactive plot changes
-#         save_dataframe(df, product_name)
+#         save_dataframe(df, product_name, path)
 #
-#         # Create line chart
 #         fig = go.Figure()
-#         for col in ['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory']:
+#         for col in selected_metrics:
 #             fig.add_trace(go.Scatter(x=df['Year-Month'], y=df[col], mode='lines+markers', name=col))
-#         # for col in df.columns[1:]:
-#         #     fig.add_trace(go.Scatter(x=df['Month'], y=df[col], mode='lines+markers', name=col))
 #
 #         fig.update_layout(title='Metrics Over Time', xaxis_title='Year-Month', yaxis_title='Value')
 #
-#         # Transpose back for table display
 #         updated_transposed = df.set_index('Year-Month').T
 #         updated_transposed.reset_index(inplace=True)
 #         updated_transposed.rename(columns={'index': 'Metric'}, inplace=True)
@@ -203,3 +291,6 @@ def dash_app(data, product_name, path):
 #         return fig, updated_transposed.to_dict('records')
 #
 #     app.run(debug=False)
+
+
+

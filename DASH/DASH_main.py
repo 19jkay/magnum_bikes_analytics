@@ -381,7 +381,7 @@ def dash_accessories_other_launch(series, financial_forecast, product_name, valu
 
     df_stockonhand = df_stockonhand.loc[(df_stockonhand['ProductGroupName'] == 'Accessories') | (df_stockonhand['ProductGroupName'] == 'Accessories SLC Store')]
     df_stockonhand = df_stockonhand.loc[~df_stockonhand['ProductDescription'].isin(top_accessories)]
-    print("before: ", df_stockonhand)
+
     inventory_accessories_other = df_stockonhand['QtyOnHand'].sum()
 
 
