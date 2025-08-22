@@ -80,6 +80,13 @@ def get_sales_orders(unleashed_data_name, start_date, end_date, url_param="", pa
 
     return unleashed_json
 
+def get_purchase_orders(unleashed_data_name, start_date, end_date, url_param="", page_number=1):
+    url_param = f"startDate={start_date}&endDate={end_date}"
+
+    url_base = unleashed_data_name + "/Page"
+    unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
+
+    return unleashed_json
 
 
 
@@ -161,6 +168,9 @@ def clean_sales_orders(df):
     final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
     return final_df
 
+def clean_purchase_orders(df):
+    return df
+
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -174,6 +184,8 @@ def get_page_data(unleashed_data_name, url_param, page_number, start_date='', en
         return get_stock_on_hand_helper(unleashed_data_name, end_date, url_param, page_number)
     elif unleashed_data_name == 'Customers':
         return get_customers_helper(unleashed_data_name, url_param, page_number)
+    elif unleashed_data_name == 'PurchaseOrders':
+        return get_purchase_orders(unleashed_data_name, start_date, end_date, url_param, page_number)
     else:
         return get_sales_orders(unleashed_data_name, start_date, end_date, url_param, page_number)
 
@@ -204,6 +216,8 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
         df = clean_stock_on_hand(df)
     elif unleashed_data_name == 'Customers':
         df = clean_customers_data(df)
+    elif unleashed_data_name == 'PurchaseOrders':
+        df = clean_purchase_orders(df)
     else:
         df = clean_sales_orders(df)
 

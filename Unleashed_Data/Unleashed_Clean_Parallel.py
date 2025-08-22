@@ -128,10 +128,30 @@ def Unleashed_SalesOrders_clean_data_parallel(start_date, end_date, reload=True,
     return df
 
 
+def Unleashed_PurchaseOrders_clean_data_parallel(start_date, end_date, reload=True, save_excel=False):
+
+    #rerun API Calls
+    if reload:
+        df_purchaseorders = get_data_parallel(unleashed_data_name="PurchaseOrders", start_date=start_date, end_date=end_date)
+
+        df = df_purchaseorders
+        if save_excel:
+            file_path = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_clean_PurchaseOrders_data.xlsx"
+            folder_path = os.path.dirname(file_path)
+            os.makedirs(folder_path, exist_ok=True)
+            df.to_excel(file_path, index=False)
+            print(f"Excel file written to: {file_path}")
+
+    else:
+        PURCHASEORDERS_FILENAME = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_clean_PurchaseOrders_data.xlsx"
+        df = pd.read_excel(PURCHASEORDERS_FILENAME)
+
+    return df
+
 
 
 
 #
-# start_date = '2025-01-04'
-# end_date = '2025-08-04'
-# a = Unleashed_SalesOrders_clean_data_parallel(start_date, end_date, reload=True)
+start_date = '2025-01-04'
+end_date = '2025-08-04'
+a = Unleashed_PurchaseOrders_clean_data_parallel(start_date, end_date, reload=True, save_excel=True)

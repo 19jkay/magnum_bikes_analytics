@@ -155,6 +155,7 @@ if forecasting_category == 'p': #go into products
             path = os.path.join("Product_Forecasting", "Bikes", "Bike_SKUs")
 
 
+
             if reload_dash_app == "y":
                 value_string = 'OrderQuantity'
                 retrain = False
@@ -163,14 +164,14 @@ if forecasting_category == 'p': #go into products
                 forecast_horizon = 6
                 # Cosmo black
                 if product_name == 'Cosmo 2.0 T - Black- 48v 15 Ah':
-                    print("hit Costco")
+                    print("Cosmo Black Hit")
                     cosmo_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah'].reset_index(drop=True)
                     lowrider_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Low rider 2.0 - Black-Copper - 48v 15Ah'].reset_index(drop=True)
                     dash_cosmo_black_bike_launch(cosmo_black_bike=cosmo_black_bike, lowrider_black_bike=lowrider_black_bike, product_name=product_name, value_string=value_string, path=path, forecast_horizon=forecast_horizon)
 
                 #Cosmo calypso
                 elif product_name == 'Cosmo 2.0 T - Calypso - 48v 15 Ah':
-                    print("Calypso hit")
+                    print("Cosmo Calypso Hit")
                     scaler = 0.15
                     cosmo_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Cosmo 2.0 T - Black- 48v 15 Ah'].reset_index(drop=True)
                     lowrider_black_bike = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == 'Low rider 2.0 - Black-Copper - 48v 15Ah'].reset_index(drop=True)
@@ -182,6 +183,7 @@ if forecasting_category == 'p': #go into products
 
                 #Other bikes
                 else:
+                    
                     product_series = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == product_name].reset_index(drop=True)
                     dash_bike_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name, value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon, SKU_or_type='ProductDescription')
 

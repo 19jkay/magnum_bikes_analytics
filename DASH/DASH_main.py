@@ -328,7 +328,7 @@ def dash_accessories_launch(series, financial_forecast, product_name, value_stri
     #get StockOnHand (write code in future to just get stock for product_name, need GUID)
     df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
 
-
+    #go over
     # df_stockonhand_product = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
     # df_stockonhand_product = df_stockonhand_product[['ProductDescription', 'QtyOnHand']]
     # inventory_specific_product = df_stockonhand_product.loc[df_stockonhand['ProductDescription'] == product_name]['QtyOnHand'].iloc[0]

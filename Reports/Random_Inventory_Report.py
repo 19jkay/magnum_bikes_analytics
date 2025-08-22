@@ -49,7 +49,7 @@ df_report.rename(columns={'AvgCost': 'Avg Cost'}, inplace=True)
 
 df_report = df_report[['Product Group', 'Product Code', 'Product Description', 'Qty On Hand', 'Units sold TTM']]
 
-
+df_report = df_report.loc[(df_report['Product Group'] != 'Bikes') & (df_report['Product Group'] != 'Bikes EOL')]
 df_report = df_report.loc[df_report['Units sold TTM'] > 0]
 df_report = df_report.sample(n=40)
 

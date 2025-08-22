@@ -83,20 +83,6 @@ def write_consensus_report(df, product_name, path, selected_month, selected_year
         # Save updated file
         existing_data.to_excel(full_path, index=False, header=False)
 
-    # else:
-    #     #load df and write new data to it
-    #     df_reload = pd.read_excel(full_path)
-    #
-    #     if product_name in first column of df_reload:
-    #         update row in df_reload with [product_name] + df['Final Consensus'].tolist()
-    #         save dataframe
-    #     else:
-    #         row = [product_name] + df['Final Consensus'].tolist()
-    #         df_tosave = pd.concat([df_reload, row])
-    #         save_dataframe(df_tosave, output_dir, path)
-
-
-
 
 
 def dash_app(data, product_name, path):
@@ -139,6 +125,8 @@ def dash_app(data, product_name, path):
             inline=True
         ),
 
+        dcc.Graph(id='line-chart'),
+
         html.Div([
             html.Label("Select Month:"),
             dcc.Dropdown(
@@ -154,9 +142,7 @@ def dash_app(data, product_name, path):
                 placeholder='Select year'
             ),
             html.Button('Save', id='save-button', n_clicks=0, style={'marginTop': '10px'})
-        ], style={'marginTop': '20px'}),
-
-        dcc.Graph(id='line-chart')
+        ], style={'marginTop': '20px'})
     ])
 
     @app.callback(
