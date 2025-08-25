@@ -5,6 +5,7 @@ from Product_Forecasting.Product_Forecast_Clean import *
 from DASH.DASH_main import dash_bike_launch, dash_parts_launch, dash_parts_other_launch, dash_accessories_launch, \
     dash_accessories_other_launch, dash_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, cosmo_dash
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
+from Unleashed_Data.Unleashed_Clean_Parallel import Unleashed_Warehouses_clean_data_parallel
 
 if __name__ == "__main__":
     def find_best_matches(user_input, choices, limit=10):
@@ -135,6 +136,10 @@ if __name__ == "__main__":
         df_accessories = df_accessories.loc[df_accessories['Year-Month'] <= last_day_prev_month_str]
         return df_accessories
 
+
+    df_warehouses_names = Unleashed_Warehouses_clean_data_parallel(reload=False, save_excel=True)['WarehouseName']
+    # print(df_warehouses_names)
+
     while True:
         load_all_data_input = input("Would you like to reload all product data? (y/n): ")
         if load_all_data_input == "y":
@@ -145,17 +150,32 @@ if __name__ == "__main__":
         reload_data = False
         save_excel = True
 
+
         special_bikes = ['Cosmo 2.0 T - Black- 48v 15 Ah', 'Cosmo 2.0 T - Calypso - 48v 15 Ah']
 
         forecasting_category = input("Enter forecasting category Product, Sales, Operations (p/s/o): ")
 
         # go into product forecasting
         if forecasting_category == 'p':  # go into products
+            #load warehouses
             product_category = input("Enter product category Bikes, Parts, Accessories (b/p/a): ")
             if product_category == 'b':  # go into bikes
                 print("Product Category \"Bikes\" Chosen.")
                 df_bikes, df_bikes_descriptions = get_bikes_product_data(reload_data=reload_data, save_excel=save_excel)
                 bike_category = input("Enter bike category Specific SKU or Bike Type (s/b): ")
+
+
+                # Display warehouse options with an added 'None' choice
+                print(df_warehouses_names)
+                print(f"{len(df_warehouses_names)}: None")  # Append 'None' option at the end
+                index = int(input("Enter warehouse index number (or choose 'None'): "))
+                if index == len(df_warehouses_names):
+                    warehouse_name = None
+                else:
+                    warehouse_name = df_warehouses_names.loc[index]
+                print("Chosen warehouse:", warehouse_name if warehouse_name else "None selected")
+
+
                 if bike_category == 's':  # go into specific bike SKU
 
                     user_input = input("Enter bike name or partial name: ")
@@ -210,7 +230,7 @@ if __name__ == "__main__":
                                 df_bikes_descriptions['ProductDescription'] == product_name].reset_index(drop=True)
                             dash_bike_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name,
                                              value_string=value_string, retrain=retrain, path=path,
-                                             forecast_horizon=forecast_horizon, SKU_or_type='ProductDescription')
+                                             forecast_horizon=forecast_horizon, SKU_or_type='ProductDescription', warehouse_name=warehouse_name)
 
                     else:
                         df = reload_df_for_dash(product_name=product_name, path=path)
@@ -233,7 +253,7 @@ if __name__ == "__main__":
                         product_series = df_bikes.loc[df_bikes['Bike_type'] == product_name].reset_index(drop=True)
                         dash_bike_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name,
                                          value_string=value_string, retrain=retrain, path=path,
-                                         forecast_horizon=forecast_horizon, SKU_or_type='Bike_type')
+                                         forecast_horizon=forecast_horizon, SKU_or_type='Bike_type', warehouse_name=warehouse_name)
 
                     else:
                         df = reload_df_for_dash(product_name=product_name, path=path)

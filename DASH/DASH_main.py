@@ -62,7 +62,7 @@ def cosmo_dash(cosmo_black_forecast_series, poll_forecast, final_consensus, inve
     dash_app(cosmo_black_data, product_name)
 
 
-def dash_bike_launch(series, financial_forecast, product_name, value_string, retrain, path, forecast_horizon, SKU_or_type):
+def dash_bike_launch(series, financial_forecast, product_name, value_string, retrain, path, forecast_horizon, SKU_or_type, warehouse_name):
     import matplotlib
     matplotlib.use('Agg')
 
@@ -76,13 +76,13 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
     dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
     num_dates = len(dates)
 
-    #get StockOnHand (write code in future to just get stock for product_name, need GUID)
-    df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
 
+    if SKU_or_type == 'ProductDescription':
+        df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=warehouse_name, end_date=today_str)
 
-    # df_stockonhand_product = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
-    # df_stockonhand_product = df_stockonhand_product[['ProductDescription', 'QtyOnHand']]
-    # inventory_specific_product = df_stockonhand_product.loc[df_stockonhand['ProductDescription'] == product_name]['QtyOnHand'].iloc[0]
+    else:
+        df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
+
 
     df_stockonhand_product = df_stockonhand.loc[(df_stockonhand[SKU_or_type] == product_name)]
     df_stockonhand_product = df_stockonhand_product[[SKU_or_type, 'QtyOnHand']]
@@ -90,7 +90,6 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
     if SKU_or_type == 'Bike_type':
         df_stockonhand_product = df_stockonhand_product.groupby(SKU_or_type)['QtyOnHand'].sum().reset_index()
 
-    # inventory_specific_product = df_stockonhand_product.loc[df_stockonhand[SKU_or_type] == product_name]['QtyOnHand'].iloc[0]
     inventory_specific_product = df_stockonhand_product['QtyOnHand'].iloc[0]
 
     # get blank cosmo inventory lists
@@ -115,7 +114,6 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
 
     p = Process(target=dash_app, args=(data, product_name, path))
     p.start()
-
     # Wait until the user closes the Dash app
     p.join()
 

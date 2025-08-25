@@ -64,13 +64,31 @@ def get_invoices_helper(unleashed_data_name, start_date, end_date, url_param="",
 
     return unleashed_json
 
-def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param="", page_number=1):
-    url_param = f"asAtDate={end_date}"
+# def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param="", page_number=1):
+#     url_param = f"asAtDate={end_date}"
+#
+#     url_base = unleashed_data_name + "/Page"
+#     unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
+#
+#     return unleashed_json
 
+
+def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param=None, page_number=1):
+    # Build query parameters
+    warehouse_name = url_param
+    url_params = [f"asAtDate={end_date}"]
+    if warehouse_name:
+        url_params.append(f"warehouseName={warehouse_name}")
+
+    # Join parameters into a single query string
+    url_param = "?" + "&".join(url_params)
+
+    # Construct base URL and make API request
     url_base = unleashed_data_name + "/Page"
     unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
 
     return unleashed_json
+
 
 def get_sales_orders(unleashed_data_name, start_date, end_date, url_param="", page_number=1):
     url_param = f"startDate={start_date}&endDate={end_date}"
@@ -87,6 +105,10 @@ def get_purchase_orders(unleashed_data_name, start_date, end_date, url_param="",
     unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
 
     return unleashed_json
+
+def get_warehouses_helper(unleashed_data_name, url_param="", page_number=1):
+    url_base = unleashed_data_name + "/Page"
+    return unleashed_api_get_request(url_base, page_number, url_param)
 
 
 
@@ -171,6 +193,9 @@ def clean_sales_orders(df):
 def clean_purchase_orders(df):
     return df
 
+def clean_warehouses_data(df):
+    return df
+
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -186,6 +211,8 @@ def get_page_data(unleashed_data_name, url_param, page_number, start_date='', en
         return get_customers_helper(unleashed_data_name, url_param, page_number)
     elif unleashed_data_name == 'PurchaseOrders':
         return get_purchase_orders(unleashed_data_name, start_date, end_date, url_param, page_number)
+    elif unleashed_data_name == 'Warehouses':
+        return get_warehouses_helper(unleashed_data_name, url_param, page_number)
     else:
         return get_sales_orders(unleashed_data_name, start_date, end_date, url_param, page_number)
 
@@ -218,6 +245,8 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
         df = clean_customers_data(df)
     elif unleashed_data_name == 'PurchaseOrders':
         df = clean_purchase_orders(df)
+    elif unleashed_data_name == 'Warehouses':
+        df = clean_warehouses_data(df)
     else:
         df = clean_sales_orders(df)
 

@@ -148,11 +148,27 @@ def Unleashed_PurchaseOrders_clean_data_parallel(start_date, end_date, reload=Tr
 
     return df
 
+def Unleashed_Warehouses_clean_data_parallel(reload=True, save_excel=False):
+    if reload:
+        df_warehouses = get_data_parallel(unleashed_data_name="Warehouses")
+
+        df = df_warehouses
+        if save_excel:
+            file_path = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_clean_Warehouse_data.xlsx"
+            folder_path = os.path.dirname(file_path)
+            os.makedirs(folder_path, exist_ok=True)
+            df.to_excel(file_path, index=False)
+            print(f"Excel file written to: {file_path}")
+
+    else:
+        WAREHOUSE_FILENAME = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_clean_Warehouse_data.xlsx"
+        df = pd.read_excel(WAREHOUSE_FILENAME)
+
+    return df
 
 
 
-#
 # start_date = '2025-01-04'
 # end_date = '2025-08-04'
-# a = Unleashed_PurchaseOrders_clean_data_parallel(start_date, end_date, reload=True, save_excel=True)
+# a = Unleashed_Warehouses_clean_data_parallel(reload=True, save_excel=True)
 
