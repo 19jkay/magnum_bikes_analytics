@@ -3,6 +3,9 @@ from Unleashed_Data.Unleashed_Load_Parralelize import get_data_parallel
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
 from Product_Forecasting.Product_Forecasting_Algorithm import forecast
 from Product_Forecasting.Costco_Product_Forecasting_Algorithm import cosmo_black_forecast, cosmo_calypso_forecast
+import threading
+from multiprocessing import Process
+
 
 import pandas as pd
 import numpy as np
@@ -108,7 +111,17 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
     #add final consensus column that is average of forecasts
     data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
 
-    dash_app(data, product_name, path)
+    # dash_app(data, product_name, path)
+
+    p = Process(target=dash_app, args=(data, product_name, path))
+    p.start()
+
+    # Wait until the user closes the Dash app
+    p.join()
+
+    print("✅ Dash app closed, continuing execution...")
+
+
 
 
 def dash_cosmo_black_bike_launch(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon):
@@ -409,3 +422,4 @@ def dash_accessories_other_launch(series, financial_forecast, product_name, valu
 def dash_reload(data, product_name, path):
     dash_app(data, product_name, path)
     return
+

@@ -5,6 +5,10 @@ from dash import Dash, html, dcc, dash_table, Input, Output, State, ctx
 import plotly.graph_objs as go
 import re
 import os
+import webbrowser
+import threading
+
+
 from datetime import datetime
 
 
@@ -90,6 +94,13 @@ def dash_app(data, product_name, path):
     import plotly.graph_objects as go
     from dash import Dash, html, dcc, dash_table, Input, Output, State, ctx
     import matplotlib
+    from multiprocessing import Event
+    import sys
+    import threading
+    import requests
+    from flask import request
+    import os
+
     matplotlib.use('Agg')
 
     # Preprocess date
@@ -106,6 +117,15 @@ def dash_app(data, product_name, path):
     transposed.rename(columns={'index': 'Metric'}, inplace=True)
 
     app = Dash(__name__)
+    server = app.server  # Access Flask server
+
+    # Add shutdown route
+    @server.route('/shutdown', methods=['POST'])
+    def shutdown():
+        shutdown_func = request.environ.get('werkzeug.server.shutdown')
+        if shutdown_func:
+            shutdown_func()
+        return 'Server shutting down...'
 
     app.layout = html.Div([
         html.H1(product_name + " Forecast Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
@@ -137,11 +157,12 @@ def dash_app(data, product_name, path):
             html.Label("Select Year:"),
             dcc.Dropdown(
                 id='year-dropdown',
-                # options=[{'label': str(y), 'value': str(y)} for y in sorted(data['Year-Month'].str[:4].astype(int).unique())],
                 options=[{'label': str(y), 'value': str(y)} for y in range(2025, 2031)],
                 placeholder='Select year'
             ),
-            html.Button('Save', id='save-button', n_clicks=0, style={'marginTop': '10px'})
+            html.Button('Save', id='save-button', n_clicks=0, style={'marginTop': '10px'}),
+            html.Button("Quit App", id="quit-btn"),
+            html.Div(id="status")
         ], style={'marginTop': '20px'})
     ])
 
@@ -196,19 +217,30 @@ def dash_app(data, product_name, path):
 
         return table_data
 
-    app.run(debug=False)
+
+    @app.callback(
+        Output("status", "children"),
+        Input("quit-btn", "n_clicks"),
+        prevent_initial_call=True
+    )
+    def shutdown(n_clicks):
+        os._exit(0)
+
+    webbrowser.open("http://127.0.0.1:8050")
+    app.run(debug=False, use_reloader=False)
 
 
 
 # def dash_app(data, product_name, path):
+#     import pandas as pd
+#     import plotly.graph_objects as go
+#     from dash import Dash, html, dcc, dash_table, Input, Output, State, ctx
 #     import matplotlib
 #     matplotlib.use('Agg')
 #
+#     # Preprocess date
 #     data['Year-Month'] = pd.to_datetime(data['Year-Month'])
-#     data['Year-Month'] = data['Year-Month'].dt.to_period('M')
-#     data['Year-Month'] = data['Year-Month'].dt.to_timestamp()
-#     # data['Year-Month'] = data['Year-Month'].dt.strftime('%Y-%m-%d')
-#     data['Year-Month'] = data['Year-Month'].dt.strftime('%Y-%m')
+#     data['Year-Month'] = data['Year-Month'].dt.to_period('M').dt.to_timestamp().dt.strftime('%Y-%m')
 #
 #     data = update_data(data)
 #
@@ -239,7 +271,24 @@ def dash_app(data, product_name, path):
 #             inline=True
 #         ),
 #
-#         dcc.Graph(id='line-chart')
+#         dcc.Graph(id='line-chart'),
+#
+#         html.Div([
+#             html.Label("Select Month:"),
+#             dcc.Dropdown(
+#                 id='month-dropdown',
+#                 options=[{'label': f'{m:02d}', 'value': f'{m:02d}'} for m in range(1, 13)],
+#                 placeholder='Select month'
+#             ),
+#             html.Label("Select Year:"),
+#             dcc.Dropdown(
+#                 id='year-dropdown',
+#                 # options=[{'label': str(y), 'value': str(y)} for y in sorted(data['Year-Month'].str[:4].astype(int).unique())],
+#                 options=[{'label': str(y), 'value': str(y)} for y in range(2025, 2031)],
+#                 placeholder='Select year'
+#             ),
+#             html.Button('Save', id='save-button', n_clicks=0, style={'marginTop': '10px'})
+#         ], style={'marginTop': '20px'})
 #     ])
 #
 #     @app.callback(
@@ -276,7 +325,31 @@ def dash_app(data, product_name, path):
 #
 #         return fig, updated_transposed.to_dict('records')
 #
-#     app.run(debug=False)
+#     @app.callback(
+#         Output('editable-table', 'data', allow_duplicate=True),
+#         Input('save-button', 'n_clicks'),
+#         State('editable-table', 'data'),
+#         State('month-dropdown', 'value'),
+#         State('year-dropdown', 'value'),
+#         prevent_initial_call=True
+#     )
+#     def handle_save(n_clicks, table_data, selected_month, selected_year):
+#         if not selected_month or not selected_year:
+#             raise Dash.exceptions.PreventUpdate
+#
+#         df = pd.DataFrame(table_data)
+#         write_consensus_report(df, product_name, path, selected_month, selected_year)
+#
+#         return table_data
+#
+#     # app.run(debug=False)
+#     app.run(debug=False, use_reloader=False)
+
+
+
+
+
+
 
 
 
