@@ -62,6 +62,7 @@ def cosmo_dash(cosmo_black_forecast_series, poll_forecast, final_consensus, inve
     dash_app(cosmo_black_data, product_name)
 
 
+
 def dash_bike_launch(series, financial_forecast, product_name, value_string, retrain, path, forecast_horizon, SKU_or_type, warehouse_name):
     import matplotlib
     matplotlib.use('Agg')
@@ -77,11 +78,8 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
     num_dates = len(dates)
 
 
-    if SKU_or_type == 'ProductDescription':
-        df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=warehouse_name, end_date=today_str)
 
-    else:
-        df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
+    df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=warehouse_name, end_date=today_str)
 
 
     df_stockonhand_product = df_stockonhand.loc[(df_stockonhand[SKU_or_type] == product_name)]
@@ -90,19 +88,26 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
     if SKU_or_type == 'Bike_type':
         df_stockonhand_product = df_stockonhand_product.groupby(SKU_or_type)['QtyOnHand'].sum().reset_index()
 
-    inventory_specific_product = df_stockonhand_product['QtyOnHand'].iloc[0]
+    # print(df_stockonhand_product['QtyOnHand'])
+    if df_stockonhand_product.empty is True:
+        inventory_specific_product = 0
+    else:
+        inventory_specific_product = df_stockonhand_product['QtyOnHand'].iloc[0]
 
     # get blank cosmo inventory lists
     inventory_specific_product_list = [float(inventory_specific_product)] + [0 for i in range(num_dates - 1)]
 
     analytical_forecast = np.round(series_forecast.univariate_values(), 2).tolist()
 
+    if warehouse_name is None:
+        warehouse_name = 'Total'
+
     # Fill the DataFrame
     data = pd.DataFrame({
         'Year-Month': dates,
         'Analytical Forecast (Kay)': analytical_forecast,
         'Financial Forecast (Poll)': financial_forecast,
-        'Inventory': inventory_specific_product_list,
+        'Inventory ' + warehouse_name: inventory_specific_product_list,
         'Ending Inventory': [0, 0, 0, 0, 0, 0],
         'Purchases': [0, 0, 0, 0, 0, 0]
     })
@@ -114,9 +119,7 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
 
     p = Process(target=dash_app, args=(data, product_name, path))
     p.start()
-    # Wait until the user closes the Dash app
     p.join()
-
     print("✅ Dash app closed, continuing execution...")
 
 
@@ -164,7 +167,14 @@ def dash_cosmo_black_bike_launch(cosmo_black_bike, lowrider_black_bike, product_
     # add final consensus column that is average of forecasts
     data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
 
-    dash_app(data, product_name, path)
+    # dash_app(data, product_name, path)
+
+    p = Process(target=dash_app, args=(data, product_name, path))
+    p.start()
+    p.join()
+    print("✅ Dash app closed, continuing execution...")
+
+
 
 def dash_cosmo_calypso_bike_launch(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon):
     import matplotlib
@@ -207,7 +217,12 @@ def dash_cosmo_calypso_bike_launch(cosmo_black_bike, lowrider_black_bike, produc
     # add final consensus column that is average of forecasts
     data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
 
-    dash_app(data, product_name, path)
+    # dash_app(data, product_name, path)
+
+    p = Process(target=dash_app, args=(data, product_name, path))
+    p.start()
+    p.join()
+    print("✅ Dash app closed, continuing execution...")
 
 
 
@@ -259,7 +274,12 @@ def dash_parts_launch(series, financial_forecast, product_name, value_string, re
     #add final consensus column that is average of forecasts
     data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
 
-    dash_app(data, product_name, path)
+    # dash_app(data, product_name, path)
+
+    p = Process(target=dash_app, args=(data, product_name, path))
+    p.start()
+    p.join()
+    print("✅ Dash app closed, continuing execution...")
 
 
 def dash_parts_other_launch(series, financial_forecast, product_name, value_string, retrain, path, forecast_horizon, top_parts):
@@ -318,7 +338,12 @@ def dash_parts_other_launch(series, financial_forecast, product_name, value_stri
     #add final consensus column that is average of forecasts
     data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
 
-    dash_app(data, product_name, path)
+    # dash_app(data, product_name, path)
+
+    p = Process(target=dash_app, args=(data, product_name, path))
+    p.start()
+    p.join()
+    print("✅ Dash app closed, continuing execution...")
 
 
 
@@ -368,7 +393,12 @@ def dash_accessories_launch(series, financial_forecast, product_name, value_stri
     #add final consensus column that is average of forecasts
     data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
 
-    dash_app(data, product_name, path)
+    # dash_app(data, product_name, path)
+
+    p = Process(target=dash_app, args=(data, product_name, path))
+    p.start()
+    p.join()
+    print("✅ Dash app closed, continuing execution...")
 
 
 
@@ -414,10 +444,19 @@ def dash_accessories_other_launch(series, financial_forecast, product_name, valu
     #add final consensus column that is average of forecasts
     data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
 
-    dash_app(data, product_name, path)
+    # dash_app(data, product_name, path)
+
+    p = Process(target=dash_app, args=(data, product_name, path))
+    p.start()
+    p.join()
+    print("✅ Dash app closed, continuing execution...")
 
 
 def dash_reload(data, product_name, path):
-    dash_app(data, product_name, path)
+    # dash_app(data, product_name, path)
+    p = Process(target=dash_app, args=(data, product_name, path))
+    p.start()
+    p.join()
+    print("✅ Dash app closed, continuing execution...")
     return
 

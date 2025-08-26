@@ -29,15 +29,33 @@ def save_dataframe(df, product_name, path, filename_suffix="consensus_data", ext
     df.to_excel(save_path, index=False)
     print(f"Saved to: {save_path}")
 
-def update_data(data):
+# def update_data(data):
+#     # data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
+#     # current inventory is last months Ending Inventory
+#     for i in range(1, len(data)):
+#         data.loc[i - 1, 'Ending Inventory'] = data.loc[i - 1, 'Inventory'] - data.loc[i - 1, 'Final Consensus'] + \
+#                                               data.loc[i - 1, 'Purchases']
+#         data.loc[i, 'Inventory'] = data.loc[i - 1, 'Ending Inventory']
+#     # do last column in table
+#     data.loc[len(data) - 1, 'Ending Inventory'] = data.loc[len(data) - 1, 'Inventory'] - data.loc[
+#         len(data) - 1, 'Final Consensus'] + data.loc[len(data) - 1, 'Purchases']
+#
+#     #round to 2 decimal places
+#     numeric_cols = data.select_dtypes(include='number').columns
+#     data[numeric_cols] = data[numeric_cols].round(0)
+#
+#     return data
+
+
+def update_data(data, inventory_name):
     # data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
     # current inventory is last months Ending Inventory
     for i in range(1, len(data)):
-        data.loc[i - 1, 'Ending Inventory'] = data.loc[i - 1, 'Inventory'] - data.loc[i - 1, 'Final Consensus'] + \
+        data.loc[i - 1, 'Ending Inventory'] = data.loc[i - 1, inventory_name] - data.loc[i - 1, 'Final Consensus'] + \
                                               data.loc[i - 1, 'Purchases']
-        data.loc[i, 'Inventory'] = data.loc[i - 1, 'Ending Inventory']
+        data.loc[i, inventory_name] = data.loc[i - 1, 'Ending Inventory']
     # do last column in table
-    data.loc[len(data) - 1, 'Ending Inventory'] = data.loc[len(data) - 1, 'Inventory'] - data.loc[
+    data.loc[len(data) - 1, 'Ending Inventory'] = data.loc[len(data) - 1, inventory_name] - data.loc[
         len(data) - 1, 'Final Consensus'] + data.loc[len(data) - 1, 'Purchases']
 
     #round to 2 decimal places
@@ -107,9 +125,12 @@ def dash_app(data, product_name, path):
     data['Year-Month'] = pd.to_datetime(data['Year-Month'])
     data['Year-Month'] = data['Year-Month'].dt.to_period('M').dt.to_timestamp().dt.strftime('%Y-%m')
 
-    data = update_data(data)
+    inventory_name = [col for col in data.columns if col.startswith('Inventory')][0]
+    print("in app: ", inventory_name)
 
-    metrics = ['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory', 'Ending Inventory', 'Purchases']
+    data = update_data(data, inventory_name)
+
+    metrics = ['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', inventory_name, 'Ending Inventory', 'Purchases']
     data = data[['Year-Month'] + metrics]
 
     transposed = data.set_index('Year-Month').T
@@ -141,7 +162,7 @@ def dash_app(data, product_name, path):
         dcc.Checklist(
             id='metric-selector',
             options=[{'label': m, 'value': m} for m in metrics],
-            value=['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', 'Inventory'],
+            value=['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', inventory_name],
             inline=True
         ),
 
@@ -184,7 +205,7 @@ def dash_app(data, product_name, path):
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
         if all(metric in df.columns for metric in metrics):
-            df = update_data(df)
+            df = update_data(df, inventory_name)
 
         save_dataframe(df, product_name, path)
 

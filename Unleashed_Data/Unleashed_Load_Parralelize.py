@@ -191,7 +191,32 @@ def clean_sales_orders(df):
     return final_df
 
 def clean_purchase_orders(df):
-    return df
+    purchaseOrder_df = df['Supplier'].apply(pd.Series)
+    df_expanded = pd.concat([df.drop(columns=['Supplier']), purchaseOrder_df], axis=1)
+
+    # The InvoiceLines column has a list of dictionaries for each individual purchase. Make each dictionary a row in the dataframe
+    # Step 1: Create a copy without the 'InvoiceLines' column
+    base_df = df_expanded.drop(columns=['PurchaseOrderLines'])
+    # Step 2: Convert 'InvoiceLines' list of dicts into a separate DataFrame
+    lines_df = df_expanded[['PurchaseOrderLines']].explode('PurchaseOrderLines').reset_index()
+    # Step 3: Normalize each dictionary into its own row
+    invoice_lines_expanded = pd.json_normalize(lines_df['PurchaseOrderLines'])
+    invoice_lines_expanded = invoice_lines_expanded.rename(columns={'DeliveryDate': 'PurchaseOrderLines_DeliveryDate'})
+    # Step 4: Merge base invoice info with each invoice line
+    final_df = pd.concat([base_df.loc[lines_df['index']].reset_index(drop=True), invoice_lines_expanded], axis=1)
+
+    final_df = final_df.rename(columns={'LastModifiedOn': 'PurchaseOrderLines_LastModifiedOn'})
+    final_df = final_df.rename(columns={'LastModifiedBy': 'PurchaseOrderLines_LastModifiedBy'})
+
+    final_df = final_df.rename(columns={'Product.ProductCode': 'ProductCode'})
+    final_df = final_df.rename(columns={'Product.ProductDescription': 'ProductDescription'})
+
+    # convert weird date format to regular date
+    final_df['OrderDate'] = final_df['OrderDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['DeliveryDate'] = final_df['DeliveryDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
+
+    return final_df
 
 def clean_warehouses_data(df):
     return df
