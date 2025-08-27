@@ -135,6 +135,8 @@ def Unleashed_PurchaseOrders_clean_data_parallel(start_date, end_date, reload=Tr
         df_purchaseorders = get_data_parallel(unleashed_data_name="PurchaseOrders", start_date=start_date, end_date=end_date)
 
         df = df_purchaseorders
+        df = df[['OrderNumber', 'OrderDate', 'DeliveryDate', 'CompletedDate', 'OrderStatus', 'ProductCode', 'ProductDescription', 'OrderQuantity', 'LineTotal', 'SupplierCode', 'SupplierName']]
+
         if save_excel:
             file_path = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_clean_PurchaseOrders_data.xlsx"
             folder_path = os.path.dirname(file_path)
