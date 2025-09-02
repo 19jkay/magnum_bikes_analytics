@@ -73,7 +73,7 @@ def get_invoices_helper(unleashed_data_name, start_date, end_date, url_param="",
 #     return unleashed_json
 
 
-def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param=None, page_number=1):
+def get_stock_on_hand_helper_old(unleashed_data_name, end_date, url_param=None, page_number=1):
     # Build query parameters
     warehouse_name = url_param
     url_params = [f"asAtDate={end_date}"]
@@ -86,6 +86,26 @@ def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param=None, page
     # Construct base URL and make API request
     url_base = unleashed_data_name + "/Page"
     unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
+
+    return unleashed_json
+
+
+def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param=None, page_number=1):
+    # Build query parameters
+    url_params = [f"asAtDate={end_date}"]
+    url_params.append(url_param)
+
+    # if warehouse_name:
+    #     url_params.append(f"warehouseName={warehouse_name}")
+    # if product_id:
+    #     url_params.append(f"productCode={product_id}")  # or productId depending on API spec
+
+    # Join parameters into a single query string
+    query_string = "?" + "&".join(url_params)
+
+    # Construct base URL and make API request
+    url_base = unleashed_data_name + "/Page"
+    unleashed_json = unleashed_api_get_request(url_base, page_number, query_string)
 
     return unleashed_json
 

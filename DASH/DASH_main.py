@@ -3,7 +3,7 @@ from Unleashed_Data.Unleashed_Load_Parralelize import get_data_parallel
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
 from Product_Forecasting.Product_Forecasting_Algorithm import forecast
 from Product_Forecasting.Costco_Product_Forecasting_Algorithm import cosmo_black_forecast, cosmo_calypso_forecast
-import threading
+from DASH.DASH_Helper import DASH_Helper_get_product_info
 from multiprocessing import Process
 
 
@@ -77,9 +77,15 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
     dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
     num_dates = len(dates)
 
+    product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
+    url_param = [f"warehouseName={warehouse_name}"]
 
-
-    df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=warehouse_name, end_date=today_str)
+    # df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=warehouse_name, end_date=today_str)
+    if SKU_or_type:
+        df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=url_param, end_date=today_str)
+    else:
+        url_param.append(f"productId={product_guid}")
+        df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=url_param, end_date=today_str)
 
 
     df_stockonhand_product = df_stockonhand.loc[(df_stockonhand[SKU_or_type] == product_name)]
