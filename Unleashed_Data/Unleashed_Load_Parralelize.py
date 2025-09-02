@@ -93,7 +93,8 @@ def get_stock_on_hand_helper_old(unleashed_data_name, end_date, url_param=None, 
 def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param=None, page_number=1):
     # Build query parameters
     url_params = [f"asAtDate={end_date}"]
-    url_params.append(url_param)
+    if url_param:
+        url_params.extend(url_param)
 
     # if warehouse_name:
     #     url_params.append(f"warehouseName={warehouse_name}")
