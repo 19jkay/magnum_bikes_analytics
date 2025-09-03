@@ -181,8 +181,11 @@ def clean_invoices_data(df):
 
 
 def clean_stock_on_hand(df):
-    df['LastModifiedOn'] = df['LastModifiedOn'].apply(convert_ms_date).dt.date.astype(str)
-    df['Bike_type'] = df['ProductDescription'].str.extract(r'^\s*(.*?)\s*-\s*')
+    if df.empty:
+        print("No stock on hand.")
+    else:
+        df['LastModifiedOn'] = df['LastModifiedOn'].apply(convert_ms_date).dt.date.astype(str)
+        df['Bike_type'] = df['ProductDescription'].str.extract(r'^\s*(.*?)\s*-\s*')
     return df
 
 def clean_sales_orders(df):

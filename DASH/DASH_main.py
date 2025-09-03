@@ -77,19 +77,23 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
     dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
     num_dates = len(dates)
 
-    url_param = None
+    # url_param = None
 
     # df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=warehouse_name, end_date=today_str)
     if SKU_or_type == 'Bike_type':
         #only have url_param be for warehouse since all of one bike type
         if warehouse_name:
             url_param = [f"warehouseName={warehouse_name}"]
+        else: url_param = None
         df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=url_param, end_date=today_str)
     else:
         #have url param be warehouse and prdouctId info
-        url_param = [f"warehouseName={warehouse_name}"]
         product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
-        url_param.append(f"productId={product_guid}")
+        url_param = [f"productId={product_guid}"]
+        if warehouse_name:
+            url_param.append(f"warehouseName={warehouse_name}")
+        # product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
+        # url_param.append(f"productId={product_guid}")
         df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=url_param, end_date=today_str)
 
 
@@ -135,32 +139,57 @@ def dash_bike_launch(series, financial_forecast, product_name, value_string, ret
 
 
 
-
-def dash_cosmo_black_bike_launch(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon):
+def dash_cosmo_black_bike_launch(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon, warehouse_name):
     import matplotlib
     matplotlib.use('Agg')
 
     today_str, last_day_prev_month_str = get_date_info()
 
     # get stock on hand for cosmo black and calypso
-    df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
+    # df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
 
 
     cosmo_black_forecast_series = cosmo_black_forecast(cosmo_black_bike, lowrider_black_bike, product_name=product_name, value_string=value_string, path=path, forecast_horizon=forecast_horizon)
 
-    print("cosmo_black_forecast_series: ", cosmo_black_forecast_series)
-
-    df_stockonhand_cosmo = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
-    df_stockonhand_cosmo = df_stockonhand_cosmo[['ProductDescription', 'QtyOnHand']]
-    inventory_specific_cosmo = df_stockonhand_cosmo.loc[df_stockonhand['ProductDescription'] == product_name]['QtyOnHand'].iloc[0]
-
+    # print("cosmo_black_forecast_series: ", cosmo_black_forecast_series)
+    #
+    # df_stockonhand_cosmo = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
+    # df_stockonhand_cosmo = df_stockonhand_cosmo[['ProductDescription', 'QtyOnHand']]
+    # inventory_specific_cosmo = df_stockonhand_cosmo.loc[df_stockonhand['ProductDescription'] == product_name]['QtyOnHand'].iloc[0]
 
     start_date = cosmo_black_forecast_series.start_time().strftime('%Y-%m-%d')
     end_date = cosmo_black_forecast_series.end_time().strftime('%Y-%m-%d')
     dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
-
     num_dates = len(dates)
-    cosmo_specific_inventory_list = [float(inventory_specific_cosmo)] + [0 for _ in range(num_dates - 1)]
+
+    # have url param be warehouse and prdouctId info
+    product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
+    url_param = [f"productId={product_guid}"]
+    if warehouse_name:
+        url_param.append(f"warehouseName={warehouse_name}")
+    # product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
+    # url_param.append(f"productId={product_guid}")
+    df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=url_param, end_date=today_str)
+
+    df_stockonhand_product = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
+    df_stockonhand_product = df_stockonhand_product[['ProductDescription', 'QtyOnHand']]
+
+    # if SKU_or_type == 'Bike_type':
+    #     df_stockonhand_product = df_stockonhand_product.groupby(SKU_or_type)['QtyOnHand'].sum().reset_index()
+
+    # print(df_stockonhand_product['QtyOnHand'])
+    if df_stockonhand_product.empty is True:
+        inventory_specific_product = 0
+    else:
+        inventory_specific_product = df_stockonhand_product['QtyOnHand'].iloc[0]
+
+
+    if warehouse_name is None:
+        warehouse_name = 'Total'
+
+
+
+    cosmo_specific_inventory_list = [float(inventory_specific_product)] + [0 for _ in range(num_dates - 1)]
 
     financial_forecast = [700, 1300, 1400, 1400, 1000, 0]
     analytical_forecast = np.round(cosmo_black_forecast_series.univariate_values(), 2).tolist()
@@ -186,8 +215,7 @@ def dash_cosmo_black_bike_launch(cosmo_black_bike, lowrider_black_bike, product_
     print("✅ Dash app closed, continuing execution...")
 
 
-
-def dash_cosmo_calypso_bike_launch(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon):
+def dash_cosmo_calypso_bike_launch_old(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon):
     import matplotlib
     matplotlib.use('Agg')
 
@@ -235,6 +263,147 @@ def dash_cosmo_calypso_bike_launch(cosmo_black_bike, lowrider_black_bike, produc
     p.join()
     print("✅ Dash app closed, continuing execution...")
 
+
+
+def dash_calypso_black_bike_launch(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon, warehouse_name):
+    import matplotlib
+    matplotlib.use('Agg')
+
+    today_str, last_day_prev_month_str = get_date_info()
+
+    # get stock on hand for cosmo black and calypso
+    # df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
+
+    cosmo_calypso_forecast_series = cosmo_calypso_forecast(cosmo_black_bike, lowrider_black_bike, product_name=product_name,
+                                                       value_string=value_string, path=path,
+                                                       forecast_horizon=forecast_horizon)
+
+    # print("cosmo_black_forecast_series: ", cosmo_black_forecast_series)
+    #
+    # df_stockonhand_cosmo = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
+    # df_stockonhand_cosmo = df_stockonhand_cosmo[['ProductDescription', 'QtyOnHand']]
+    # inventory_specific_cosmo = df_stockonhand_cosmo.loc[df_stockonhand['ProductDescription'] == product_name]['QtyOnHand'].iloc[0]
+
+    start_date = cosmo_calypso_forecast_series.start_time().strftime('%Y-%m-%d')
+    end_date = cosmo_calypso_forecast_series.end_time().strftime('%Y-%m-%d')
+    dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
+    num_dates = len(dates)
+
+    # have url param be warehouse and prdouctId info
+    product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
+    url_param = [f"productId={product_guid}"]
+    if warehouse_name:
+        url_param.append(f"warehouseName={warehouse_name}")
+    # product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
+    # url_param.append(f"productId={product_guid}")
+    df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=url_param, end_date=today_str)
+
+    df_stockonhand_product = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
+    df_stockonhand_product = df_stockonhand_product[['ProductDescription', 'QtyOnHand']]
+
+    # if SKU_or_type == 'Bike_type':
+    #     df_stockonhand_product = df_stockonhand_product.groupby(SKU_or_type)['QtyOnHand'].sum().reset_index()
+
+    # print(df_stockonhand_product['QtyOnHand'])
+    if df_stockonhand_product.empty is True:
+        inventory_specific_product = 0
+    else:
+        inventory_specific_product = df_stockonhand_product['QtyOnHand'].iloc[0]
+
+    if warehouse_name is None:
+        warehouse_name = 'Total'
+
+    cosmo_specific_inventory_list = [float(inventory_specific_product)] + [0 for _ in range(num_dates - 1)]
+
+    financial_forecast = [200, 200, 300, 400, 300, 0]
+    analytical_forecast = np.round(cosmo_calypso_forecast_series.univariate_values(), 2).tolist()
+
+    # Fill the DataFrame
+    data = pd.DataFrame({
+        'Year-Month': dates,
+        'Analytical Forecast (Kay)': analytical_forecast,
+        'Financial Forecast (Poll)': financial_forecast,
+        'Inventory': cosmo_specific_inventory_list,
+        'Ending Inventory': [0, 0, 0, 0, 0, 0],
+        'Purchases': [0, 0, 0, 0, 0, 0]
+    })
+
+    # add final consensus column that is average of forecasts
+    data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
+
+    # dash_app(data, product_name, path)
+
+    p = Process(target=dash_app, args=(data, product_name, path))
+    p.start()
+    p.join()
+    print("✅ Dash app closed, continuing execution...")
+
+
+def dash_ibd_bike_launch(series, analytical_forecast, financial_forecast, product_name, value_string, retrain, path, forecast_horizon, warehouse_name):
+    import matplotlib
+    matplotlib.use('Agg')
+
+    today_str, last_day_prev_month_str = get_date_info()
+
+    #get forecast
+    # series_forecast = analytical_forecast
+    series_forecast, series_forecast_ci = forecast(series, product_name=product_name, value_string=value_string, retrain=retrain, path=path, forecast_horizon=forecast_horizon)
+    #get forecast dates
+    start_date = series_forecast.start_time().strftime('%Y-%m-%d')
+    end_date = series_forecast.end_time().strftime('%Y-%m-%d')
+    dates = pd.date_range(start=start_date, end=end_date, freq='MS')  # 'MS' = Month Start
+    num_dates = len(dates)
+
+
+    #have url param be warehouse and prdouctId info
+    product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
+    url_param = [f"productId={product_guid}"]
+    if warehouse_name:
+        url_param.append(f"warehouseName={warehouse_name}")
+    # product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
+    # url_param.append(f"productId={product_guid}")
+    df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", url_param=url_param, end_date=today_str)
+
+
+    df_stockonhand_product = df_stockonhand.loc[(df_stockonhand['ProductDescription'] == product_name)]
+    df_stockonhand_product = df_stockonhand_product[['ProductDescription', 'QtyOnHand']]
+
+    # if SKU_or_type == 'Bike_type':
+    #     df_stockonhand_product = df_stockonhand_product.groupby(SKU_or_type)['QtyOnHand'].sum().reset_index()
+
+    # print(df_stockonhand_product['QtyOnHand'])
+    if df_stockonhand_product.empty is True:
+        inventory_specific_product = 0
+    else:
+        inventory_specific_product = df_stockonhand_product['QtyOnHand'].iloc[0]
+
+    # get blank cosmo inventory lists
+    inventory_specific_product_list = [float(inventory_specific_product)] + [0 for i in range(num_dates - 1)]
+
+    # analytical_forecast = np.round(series_forecast.univariate_values(), 2).tolist()
+
+    if warehouse_name is None:
+        warehouse_name = 'Total'
+
+    # Fill the DataFrame
+    data = pd.DataFrame({
+        'Year-Month': dates,
+        'Analytical Forecast (Kay)': analytical_forecast,
+        'Financial Forecast (Poll)': financial_forecast,
+        'Inventory ' + warehouse_name: inventory_specific_product_list,
+        'Ending Inventory': [0, 0, 0, 0, 0, 0],
+        'Purchases': [0, 0, 0, 0, 0, 0]
+    })
+
+    #add final consensus column that is average of forecasts
+    data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
+
+    # dash_app(data, product_name, path)
+
+    p = Process(target=dash_app, args=(data, product_name, path))
+    p.start()
+    p.join()
+    print("✅ Dash app closed, continuing execution...")
 
 
 

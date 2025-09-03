@@ -1,17 +1,8 @@
 import pandas as pd
-# from dash import Dash, dash_table, dcc, html, Input, Output
-from dash import Dash, html, dcc, dash_table, Input, Output, State, ctx
-
-import plotly.graph_objs as go
-import re
 import os
 import webbrowser
-import threading
 
-
-from datetime import datetime
-
-
+from DASH.DASH_Helper import DASH_Helper_get_product_info
 
 
 def save_dataframe(df, product_name, path, filename_suffix="consensus_data", extension="xlsx"):
@@ -71,13 +62,19 @@ def write_consensus_report(df, product_name, path, selected_month, selected_year
     df.reset_index(inplace=True)
     df = df[['Year-Month', 'Final Consensus']]
 
+    product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
+    df['Final Consensus'] = (avg_cost * df['Final Consensus']).round(2)
+
     extension = "xlsx"
-    file_name = 'All_Forecasts'
+    file_name = 'Forecast_Summary'
     target_period = f"{selected_year}-{selected_month}"
+    print("Saving path: ", path)
     output_dir = os.path.join(r"C:\Users\joshu\Documents\DASH", path)
     os.makedirs(output_dir, exist_ok=True)  # Ensure directory exists
     filename = f"{file_name}_{target_period}.{extension}"
     full_path = os.path.join(output_dir, filename)
+
+    product_name = product_name + " ($)"
 
     row1 = ['Year-Month'] + df['Year-Month'].tolist()
     row2 = [product_name] + df['Final Consensus'].tolist()

@@ -3,7 +3,7 @@ from rapidfuzz import fuzz, process
 
 from Product_Forecasting.Product_Forecast_Clean import *
 from DASH.DASH_main import dash_bike_launch, dash_parts_launch, dash_parts_other_launch, dash_accessories_launch, \
-    dash_accessories_other_launch, dash_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, cosmo_dash
+    dash_accessories_other_launch, dash_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, dash_ibd_bike_launch
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
 from Unleashed_Data.Unleashed_Clean_Parallel import Unleashed_Warehouses_clean_data_parallel
 
@@ -202,7 +202,7 @@ if __name__ == "__main__":
                             dash_cosmo_black_bike_launch(cosmo_black_bike=cosmo_black_bike,
                                                          lowrider_black_bike=lowrider_black_bike, product_name=product_name,
                                                          value_string=value_string, path=path,
-                                                         forecast_horizon=forecast_horizon)
+                                                         forecast_horizon=forecast_horizon, warehouse_name=warehouse_name)
 
                         # Cosmo calypso
                         elif product_name == 'Cosmo 2.0 T - Calypso - 48v 15 Ah':
@@ -222,7 +222,18 @@ if __name__ == "__main__":
                                                            lowrider_black_bike=lowrider_black_bike, product_name=product_name,
                                                            value_string=value_string, path=path,
                                                            forecast_horizon=forecast_horizon)
-
+                        #go into ibd bikes
+                        elif product_name in ['Wave - Graphite - 48V 15A', 'Wave - Ocean - 48V 15A', 'Wave - Pearl - 48V 15A', 'Wave - Chroma Green - 48V 15A',
+                                              'Bliss - Amethyst - 48V 15A', 'Bliss - Chroma Green - 48V 15A', 'Bliss - Graphite - 48V 15A', 'Bliss - Wildfire - 48V 15A',
+                                              'Edge - Graphite - 48V 15A', 'Edge - Ruby - 48V 15A', 'Edge - Stealth Camo - 48V 15A']:
+                            print("Hit NPI")
+                            analytical_forecast = int(input("Enter analytical forecast for IBD bike: "))
+                            product_series = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == product_name].reset_index(drop=True)
+                            dash_ibd_bike_launch(series=product_series, analytical_forecast=analytical_forecast, financial_forecast=poll_forecast,
+                                             product_name=product_name,
+                                             value_string=value_string, retrain=retrain, path=path,
+                                             forecast_horizon=forecast_horizon,
+                                             warehouse_name=warehouse_name)
                         # Other bikes
                         else:
 
