@@ -265,7 +265,7 @@ def dash_cosmo_calypso_bike_launch_old(cosmo_black_bike, lowrider_black_bike, pr
 
 
 
-def dash_calypso_black_bike_launch(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon, warehouse_name):
+def dash_cosmo_calypso_bike_launch(cosmo_black_bike, lowrider_black_bike, product_name, value_string, path, forecast_horizon, warehouse_name):
     import matplotlib
     matplotlib.use('Agg')
 
@@ -630,6 +630,10 @@ def dash_accessories_other_launch(series, financial_forecast, product_name, valu
     p.start()
     p.join()
     print("✅ Dash app closed, continuing execution...")
+
+
+def dash_sales_launch():
+    return
 
 
 def dash_reload(data, product_name, path):

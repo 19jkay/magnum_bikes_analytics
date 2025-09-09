@@ -6,6 +6,7 @@ from DASH.DASH_main import dash_bike_launch, dash_parts_launch, dash_parts_other
     dash_accessories_other_launch, dash_reload, dash_cosmo_black_bike_launch, dash_cosmo_calypso_bike_launch, dash_ibd_bike_launch
 from Product_Forecasting.Product_Forecasting_Helpers import get_date_info
 from Unleashed_Data.Unleashed_Clean_Parallel import Unleashed_Warehouses_clean_data_parallel
+from Sales_Forecasting.Sales_Forecasting_Clean import Unleashed_sales_forecast_data
 
 if __name__ == "__main__":
     def find_best_matches(user_input, choices, limit=10):
@@ -69,9 +70,10 @@ if __name__ == "__main__":
         return df
 
 
-    def get_all_product_data(reload_data, save_excel):
+    def get_all_data(reload_data, save_excel):
         # get date info
         today_str, last_day_prev_month_str = get_date_info()
+        print("Last day previous month: ", last_day_prev_month_str)
 
         # load data
         df_bikes, df_bikes_descriptions, df_parts, df_accessories = Unleashed_get_all_product_forecast_data(
@@ -80,13 +82,17 @@ if __name__ == "__main__":
             reload=reload_data,
             save_excel=save_excel)
 
+        df_sales = Unleashed_sales_forecast_data(start_date='2022-01-01', end_date=last_day_prev_month_str,
+                                                 reload=reload_data, save_excel=save_excel)
+
         # ensure data is truncated at last day of last month
         df_bikes = df_bikes.loc[df_bikes['Year-Month'] <= last_day_prev_month_str]
         df_bikes_descriptions = df_bikes_descriptions.loc[df_bikes_descriptions['Year-Month'] <= last_day_prev_month_str]
         df_parts = df_parts.loc[df_parts['Year-Month'] <= last_day_prev_month_str]
         df_accessories = df_accessories.loc[df_accessories['Year-Month'] <= last_day_prev_month_str]
+        df_sales = df_sales.loc[df_sales['Year-Month'] <= last_day_prev_month_str]
 
-        return df_bikes, df_bikes_descriptions, df_parts, df_accessories
+        return df_bikes, df_bikes_descriptions, df_parts, df_accessories, df_sales
 
 
     def get_bikes_product_data(reload_data, save_excel):
@@ -137,6 +143,15 @@ if __name__ == "__main__":
         return df_accessories
 
 
+    def get_sales_data(reload_data, save_excel):
+        today_str, last_day_prev_month_str = get_date_info()
+        df_sales = Unleashed_sales_forecast_data(start_date='2022-01-01', end_date=last_day_prev_month_str,
+                                                 reload=reload_data, save_excel=save_excel)
+        df_sales = df_sales.loc[df_sales['Year-Month'] <= last_day_prev_month_str]
+
+        return df_sales
+
+
     df_warehouses_names = Unleashed_Warehouses_clean_data_parallel(reload=False, save_excel=True)['WarehouseName']
     # print(df_warehouses_names)
 
@@ -144,7 +159,7 @@ if __name__ == "__main__":
         load_all_data_input = input("Would you like to reload all product data? (y/n): ")
         if load_all_data_input == "y":
             print("Reloading all product data (this could take a few minutes)...")
-            a, b, c, d = get_all_product_data(True, True)
+            a, b, c, d, e = get_all_data(True, True)
             print("All product data reloaded!")
 
         reload_data = False
@@ -221,7 +236,8 @@ if __name__ == "__main__":
                             dash_cosmo_calypso_bike_launch(cosmo_black_bike=cosmo_black_bike,
                                                            lowrider_black_bike=lowrider_black_bike, product_name=product_name,
                                                            value_string=value_string, path=path,
-                                                           forecast_horizon=forecast_horizon)
+                                                           forecast_horizon=forecast_horizon, warehouse_name=warehouse_name)
+
                         #go into ibd bikes
                         elif product_name in ['Wave - Graphite - 48V 15A', 'Wave - Ocean - 48V 15A', 'Wave - Pearl - 48V 15A', 'Wave - Chroma Green - 48V 15A',
                                               'Bliss - Amethyst - 48V 15A', 'Bliss - Chroma Green - 48V 15A', 'Bliss - Graphite - 48V 15A', 'Bliss - Wildfire - 48V 15A',
@@ -409,3 +425,26 @@ if __name__ == "__main__":
                     else:
                         df = reload_df_for_dash(product_name=product_name, path=path)
                         dash_reload(df, product_name, path)
+
+
+        #sales forecasting
+        elif forecasting_category == 's':
+            print("In sales forecasting")
+            df_sales = get_sales_data(reload_data=reload_data, save_excel=save_excel)
+
+            # Display warehouse options with an added 'None' choice
+            customer_types = df_sales['CustomerType'].unique()
+            df_customer_types = pd.DataFrame(customer_types, columns=['CustomerType'])
+            index = int(input("Enter Customer Type index number: "))
+            customer_type = df_customer_types.loc[index]
+            print("Chosen customer type: ", customer_type)
+
+            customer_type_series = df_sales.loc[df_sales['CustomerType'] == customer_type].reset_index(drop=True)
+
+            #write dash launch funtion in DASH_main
+            # dash_bike_launch(series=product_series, financial_forecast=poll_forecast, product_name=product_name,
+            #                  value_string=value_string, retrain=retrain, path=path,
+            #                  forecast_horizon=forecast_horizon, SKU_or_type='ProductDescription',
+            #                  warehouse_name=warehouse_name)
+
+

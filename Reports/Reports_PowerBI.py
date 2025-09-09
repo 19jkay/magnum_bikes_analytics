@@ -8,12 +8,14 @@ def PowerBI_data(reload):
     print("Today:", today_str)
     print("TTM Date:", ttm_start_str)
 
-    df_TTM_SalesOrders = Unleashed_PowerBI_SalesOrder_data(start_date=ttm_start_str, end_date=today_str, reload=reload, save_excel=False)
+    today_str = '2025-09-09'
+
+    df_TTM_SalesOrders, df_TTM_SalesOrders_Bikes = Unleashed_PowerBI_SalesOrder_data(start_date=ttm_start_str, end_date=today_str, reload=reload, save_excel=False)
     df_StockOnHand = Unleashed_PowerBI_Inventory_data(today_str, reload)
     df_PurchaseOrders = Unleashed_PowerBI_PurchaseOrders_data(start_date=ttm_start_str, end_date=today_str, reload=reload, save_excel=False)
     df_PandL = Quickbooks_PowerBI_PandL_data(start_date=ttm_start_str, end_date=today_str, reload=reload)
-    return df_TTM_SalesOrders, df_StockOnHand, df_PurchaseOrders, df_PandL
+    return df_TTM_SalesOrders, df_TTM_SalesOrders_Bikes, df_StockOnHand, df_PurchaseOrders, df_PandL
 
 #get TTM sales data for PowerBI
 reload = True
-df_TTM_SalesOrders, df_StockOnHand, df_PurchaseOrders, df_PandL = PowerBI_data(reload=reload)
+df_TTM_SalesOrders, df_TTM_SalesOrders_Bikes, df_StockOnHand, df_PurchaseOrders, df_PandL = PowerBI_data(reload=reload)
