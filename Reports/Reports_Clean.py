@@ -87,6 +87,18 @@ def Unleashed_PowerBI_Inventory_data(today_str, reload):
         df['ProductGroup'] = df['ProductGroup'].fillna('No ProductGroup')
         df['ProductGroup'] = df['ProductGroup'].replace('', 'No ProductGroup')
 
+        # #convert to numeric columns
+        # df['QtyOnHand'] = pd.to_numeric(df['QtyOnHand'], errors='coerce')
+        # df['OrderQuantity'] = pd.to_numeric(df['OrderQuantity'], errors='coerce')
+        # df['OrderQuantity'] = df['OrderQuantity'].fillna(0)
+        #
+        # # compute WOH
+        # df['WOH'] = (df['QtyOnHand'] / df['OrderQuantity']) * 52
+        # df['WOH'] = df['WOH'].fillna("NaN")
+
+        #compute total value
+        # df['Total Value'] = df['QtyOnHand'] * df['AvgCost']
+
         file_path = r"C:\Users\joshu\Documents\Reporting\PowerBI_data\unleashed_parallel_StockOnHand_data.xlsx"
         folder_path = os.path.dirname(file_path)
         os.makedirs(folder_path, exist_ok=True)
@@ -132,3 +144,88 @@ def Quickbooks_PowerBI_PandL_data(start_date, end_date, reload):
 
     return df
 
+
+def Unleashed_PowerBI_WOH_report(reload):
+    from datetime import datetime, timedelta
+    if reload:
+        # Today's date
+        today = datetime.today()
+        today_str = today.strftime('%Y-%m-%d')
+
+        # Date exactly one year ago
+        one_year_ago = today - timedelta(days=365)
+        one_year_ago_str = one_year_ago.strftime('%Y-%m-%d')
+
+        # print("Today: ", today_str)
+        # print("One year ago: ", one_year_ago_str)
+
+        reload_data = True
+        save_excel = False
+        # Get TTM (Trailing Twelve Months) data
+        df_SalesOrders = Unleashed_SalesOrders_clean_data_parallel(start_date=one_year_ago_str, end_date=today_str, reload=reload_data, save_excel=save_excel)
+
+        # Get Stock on Hand data
+        df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
+
+        df_report = df_stockonhand[['ProductGroupName', 'ProductCode', 'ProductDescription', 'QtyOnHand', 'AvgCost']]
+
+        df_SalesOrders_grouped = df_SalesOrders.groupby(['ProductCode'])['OrderQuantity'].sum().reset_index()
+
+        # merge stockonhand and sales data
+        df_report = df_report.merge(df_SalesOrders_grouped, on='ProductCode', how='left')
+
+        # Convert 'QtyOnHand' to numeric column
+        df_report['QtyOnHand'] = pd.to_numeric(df_report['QtyOnHand'], errors='coerce')
+
+        # fill na with zeros so that blank sales entrees are zeros since there were no sales
+        df_report['OrderQuantity'] = pd.to_numeric(df_report['OrderQuantity'], errors='coerce')
+        df_report['OrderQuantity'] = df_report['OrderQuantity'].fillna(0)
+
+        # compute WOH
+        df_report['WOH'] = (df_report['QtyOnHand'] / df_report['OrderQuantity']) * 52
+        df_report['WOH'] = pd.to_numeric(df_report['WOH'], errors='coerce')
+
+        df_report['Total Value'] = df_report['QtyOnHand'] * df_report['AvgCost']
+
+        # replace blanks with No Product Group in 'ProductGroupName'
+        df_report['ProductGroupName'] = df_report['ProductGroupName'].replace('', 'No Product Group')
+
+        # rename columns to non-technical names
+        df_report.rename(columns={'OrderQuantity': 'Units sold TTM'}, inplace=True)
+        df_report.rename(columns={'ProductGroupName': 'Product Group'}, inplace=True)
+        df_report.rename(columns={'ProductCode': 'Product Code'}, inplace=True)
+        df_report.rename(columns={'ProductDescription': 'Product Description'}, inplace=True)
+        df_report.rename(columns={'QtyOnHand': 'Qty On Hand'}, inplace=True)
+        df_report.rename(columns={'AvgCost': 'Avg Cost'}, inplace=True)
+
+        # get final
+        df_report = df_report[
+            ['Product Group', 'Product Code', 'Product Description', 'Qty On Hand', 'Units sold TTM', 'WOH', 'Avg Cost',
+             'Total Value']]
+
+
+        def bucket_woh(woh):
+            if woh < 12:
+                return "Low Stock (WOH < 12 weeks)"
+            elif 12 <= woh and woh < 104:
+                return "Healthy Stock (12 <= WOH < 104 weeks)"
+            elif woh >= 104:
+                return "Overstock (WOH >= 104 weeks)"
+            else:
+                return "No WOH (No Sales TTM)"
+
+        df_report['WOH Bucket'] = df_report['WOH'].apply(bucket_woh)
+
+        print("Len of data: ", len(df_report))
+
+        file_path = r"C:\Users\joshu\Documents\Reporting\PowerBI_data\unleashed_reports_WOH_data.xlsx"
+        folder_path = os.path.dirname(file_path)
+        os.makedirs(folder_path, exist_ok=True)
+        df_report.to_excel(file_path, index=False)
+        print(f"Excel file written to: {file_path}")
+
+    else:
+        unleashed_PowerBI_WOH_data_FILENAME = r"C:\Users\joshu\Documents\Reporting\PowerBI_data\unleashed_reports_WOH_data.xlsx"
+        df_report = pd.read_excel(unleashed_PowerBI_WOH_data_FILENAME)
+
+    return df_report

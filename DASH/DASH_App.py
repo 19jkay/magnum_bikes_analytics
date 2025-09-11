@@ -55,7 +55,7 @@ def update_data(data, inventory_name):
 
     return data
 
-def write_consensus_report(df, product_name, path, selected_month, selected_year):
+def write_consensus_report_old(df, product_name, path, selected_month, selected_year):
     df.set_index('Metric', inplace=True)
     df = df.T
     df.index.name = 'Year-Month'
@@ -64,6 +64,8 @@ def write_consensus_report(df, product_name, path, selected_month, selected_year
 
     product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
     df['Final Consensus'] = (avg_cost * df['Final Consensus']).round(2)
+    product_name = product_name + " ($)"
+
 
     extension = "xlsx"
     file_name = 'Forecast_Summary'
@@ -74,11 +76,11 @@ def write_consensus_report(df, product_name, path, selected_month, selected_year
     filename = f"{file_name}_{target_period}.{extension}"
     full_path = os.path.join(output_dir, filename)
 
-    product_name = product_name + " ($)"
 
     row1 = ['Year-Month'] + df['Year-Month'].tolist()
     row2 = [product_name] + df['Final Consensus'].tolist()
-    new_data = pd.DataFrame([row1, row2])
+    row3 = [product_name] + df['Purchases'].tolist()
+    new_data = pd.DataFrame([row1, row2, row3])
     new_data.index = ['Year-Month', product_name]
 
     if not os.path.exists(full_path):
@@ -98,6 +100,63 @@ def write_consensus_report(df, product_name, path, selected_month, selected_year
         else:
             # Append new row
             existing_data = pd.concat([existing_data, pd.DataFrame([row2])], ignore_index=True)
+
+        # Save updated file
+        existing_data.to_excel(full_path, index=False, header=False)
+
+
+
+
+def write_consensus_report(df, product_name, path, selected_month, selected_year):
+    df.set_index('Metric', inplace=True)
+    df = df.T
+    df.index.name = 'Year-Month'
+    df.reset_index(inplace=True)
+    df = df[['Year-Month', 'Final Consensus', 'Purchases']]
+
+    product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
+    # df['Final Consensus'] = (avg_cost * df['Final Consensus']).round(2)
+    # product_name = product_name + " ($)"
+
+
+    extension = "xlsx"
+    file_name = 'Forecast_Summary'
+    target_period = f"{selected_year}-{selected_month}"
+    print("Saving path: ", path)
+    output_dir = os.path.join(r"C:\Users\joshu\Documents\DASH", path)
+    os.makedirs(output_dir, exist_ok=True)  # Ensure directory exists
+    filename = f"{file_name}_{target_period}.{extension}"
+    full_path = os.path.join(output_dir, filename)
+
+
+    row1 = ['Year-Month'] + df['Year-Month'].tolist()
+    row2 = [product_name + ' Final Consensus'] + df['Final Consensus'].tolist()
+    row3 = [product_name + ' Purchases'] + df['Purchases'].tolist()
+    new_data = pd.DataFrame([row1, row2, row3])
+
+    product_metric_one = product_name + ' Final Consensus'
+    product_metric_two = product_name + ' Purchases'
+    new_data.index = ['Year-Month', product_metric_one, product_metric_two]
+
+    if not os.path.exists(full_path):
+        # File doesn't exist — create new
+        new_data.to_excel(full_path, index=False, header=False)
+
+    else:
+        # File exists — load and update
+        existing_data = pd.read_excel(full_path, header=None)
+
+        # Check if product_name already exists in first column
+        product_rows = existing_data.iloc[:, 0].astype(str)
+        lookup = product_name + ' Final Consensus'
+        if lookup in product_rows.values:
+            # Update existing row
+            row_index = product_rows[product_rows == lookup].index[0]
+            existing_data.iloc[row_index, 1:] = row2[1:]
+            existing_data.iloc[row_index + 1, 1:] = row3[1:]
+        else:
+            # Append new row
+            existing_data = pd.concat([existing_data, pd.DataFrame([row2, row3])], ignore_index=True)
 
         # Save updated file
         existing_data.to_excel(full_path, index=False, header=False)
