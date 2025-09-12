@@ -216,6 +216,22 @@ def Unleashed_PowerBI_WOH_report(reload):
 
         df_report['WOH Bucket'] = df_report['WOH'].apply(bucket_woh)
 
+
+
+        # Try to join purchase data with inventory
+        df_PurchaseOrders = Unleashed_PurchaseOrders_clean_data_parallel(start_date='2025-01-10', end_date=today_str, reload=reload_data, save_excel=save_excel)
+        df_PurchaseOrders = df_PurchaseOrders.loc[df_PurchaseOrders['OrderStatus'] != 'Complete'].copy()
+        df_PurchaseOrders = df_PurchaseOrders.loc[df_PurchaseOrders['OrderQuantity'] != 0].copy()
+        df_PurchaseOrders = df_PurchaseOrders[['ProductCode', 'OrderQuantity']]
+
+        df_PurchaseOrders.rename(columns={'OrderQuantity': 'Incoming Product'}, inplace=True)
+        df_PurchaseOrders.rename(columns={'ProductCode': 'Product Code'}, inplace=True)
+
+        df_PurchaseOrders_grouped = df_PurchaseOrders.groupby('Product Code')['Incoming Product'].sum()
+
+        df_report = df_report.merge(df_PurchaseOrders_grouped, on='Product Code', how='left')
+
+
         print("Len of data: ", len(df_report))
 
         file_path = r"C:\Users\joshu\Documents\Reporting\PowerBI_data\unleashed_reports_WOH_data.xlsx"
