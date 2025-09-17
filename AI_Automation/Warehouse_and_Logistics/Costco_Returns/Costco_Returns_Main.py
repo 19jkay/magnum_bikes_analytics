@@ -24,15 +24,27 @@ save_excel = True
 df_salesorders = AI_Automation_SalesOrders_clean(start_date, end_date, reload=reload_data, save_excel=save_excel)
 
 
-print(df_salesorders.loc[df_salesorders['SerialNumber_Identifier'] == 'ZY25022844'])
+# print(df_salesorders.loc[df_salesorders['SerialNumber_Identifier'] == 'ZY25022844'])
 
-df_product = df_salesorders.loc[df_salesorders['SerialNumber_Identifier'] == 'ZY25022844']
+serial_number = 'ZY25022844'
+df_product = df_salesorders.loc[df_salesorders['SerialNumber_Identifier'] == serial_number]
 
 sales_order_number = df_product['SalesOrderNumber'].iloc[0]
 product_description = df_product['ProductDescription'].iloc[0]
 print("////////////")
-print(sales_order_number)
-print(product_description)
+print("SO number: ", sales_order_number)
+print("Product Description: ", product_description)
+
+
+
+if product_description == 'Cosmo 2.0 T - Black- 48v 15 Ah':
+    product_code = 'CPO23150051'
+
+elif product_description == 'Cosmo 2.0 T - Calypso - 48v 15 Ah':
+    product_code = 'CPO23150052'
+
+else: product_code = 'Not Cosmo 2.0'
+
 
 # print(df_salesorders.loc[df_salesorders['SerialNumber_Identifier'] == ''])
 
@@ -66,11 +78,18 @@ def create_stock_adjustment(product_code, warehouse_code, quantity, comment="Man
             "WarehouseCode": warehouse_code
         },
         "AdjustmentDate": datetime.now().strftime('%Y-%m-%dT%H:%M:%S'), #this line might not be correct
+        "AdjustmentReason": "Adjustment",
+        "Status": "Completed", #if does not work delete this
         "StockAdjustmentLines": [
             {
                 "Product": {
                     "ProductCode": product_code
                 },
+                "SerialNumbers": [ #and if code does not work delete this
+                    {
+                        "Identifier": serial_number
+                    }
+                ],
                 "NewQuantity": quantity,
                 "NewActualValue": 0,
                 "Comments": comment
@@ -101,5 +120,10 @@ def create_stock_adjustment(product_code, warehouse_code, quantity, comment="Man
 
 warehouse_code = 'Costco Returns'
 warehouse_guid = 'c59b7e06-2d4f-4bba-9208-48ed75594116'
-
 comment = "Test with SO number: " + sales_order_number
+quantity = 1 # or -1?
+
+print("Product Code: ", product_code)
+print("Comment: ", comment)
+
+# create_stock_adjustment(product_code=product_code, warehouse_code=warehouse_code, quantity=quantity, comment=comment)
