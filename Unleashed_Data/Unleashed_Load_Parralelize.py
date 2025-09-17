@@ -112,13 +112,28 @@ def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param=None, page
 
 
 def get_sales_orders(unleashed_data_name, start_date, end_date, url_param="", page_number=1):
-    # url_param = f"startDate={start_date}&endDate={end_date}"
-    url_param = f"completedAfter={start_date}&completedBefore={end_date}"
+    # url_param = f"completedAfter={start_date}&completedBefore={end_date}"
+
+    # Include serialBatch=true to get serial numbers in the response
+    url_param = f"completedAfter={start_date}&completedBefore={end_date}&serialBatch=true"
 
     url_base = unleashed_data_name + "/Page"
     unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
 
+    # print(json.dumps(unleashed_json, indent=2))
+
     return unleashed_json
+
+def get_sales_orders_date(unleashed_data_name, start_date, end_date, url_param, page_number):
+    # Include serialBatch=true to get serial numbers in the response
+    # url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true"
+    url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true&orderStatus=Open,Completed,Backordered,Parked,Placed,Deleted,Accounting"
+
+    url_base = 'SalesOrders' + "/Page"
+    unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
+
+    return unleashed_json
+
 
 def get_purchase_orders(unleashed_data_name, start_date, end_date, url_param="", page_number=1):
     url_param = f"startDate={start_date}&endDate={end_date}"
@@ -200,7 +215,6 @@ def clean_sales_orders(df):
     df_expanded = pd.concat([df.drop(columns=['Customer']), customer_df], axis=1)
     df_expanded = df_expanded.rename(columns={'LastModifiedOn': 'Customer_LastModifiedOn'})
 
-
     # The InvoiceLines column has a list of dictionaries for each individual purchase. Make each dictionary a row in the dataframe
     # Step 1: Create a copy without the 'InvoiceLines' column
     base_df = df_expanded.drop(columns=['SalesOrderLines'])
@@ -220,6 +234,18 @@ def clean_sales_orders(df):
     final_df['RequiredDate'] = final_df['RequiredDate'].apply(convert_ms_date).dt.date.astype(str)
     final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
     return final_df
+
+    # seriel_number_df = final_df['SerialNumbers'].apply(pd.Series)
+    # df_end = pd.concat([final_df.drop(columns=['SerialNumbers']), seriel_number_df], axis=1)
+    # df_end = df_end.rename(columns={'LastModifiedOn': 'SarielNumber_LastModifiedOn'})
+    # df_end = df_end.rename(columns={'Guid': 'SerialNumber_Guid'})
+    # df_end = df_end.rename(columns={'Identifier': 'SerialNumber_Identifier'})
+    #
+    # return df_end
+
+
+def clean_sales_orders_date(df):
+    return df
 
 def clean_purchase_orders(df):
     purchaseOrder_df = df['Supplier'].apply(pd.Series)
@@ -287,11 +313,16 @@ def get_page_data(unleashed_data_name, url_param, page_number, start_date='', en
         return get_warehouses_helper(unleashed_data_name, url_param, page_number)
     elif unleashed_data_name == 'Customers':
         return get_customers_helper(unleashed_data_name, url_param, page_number)
+    elif unleashed_data_name == 'SalesOrdersDate':
+        return get_sales_orders_date(unleashed_data_name, start_date, end_date, url_param, page_number)
     else:
         return get_sales_orders(unleashed_data_name, start_date, end_date, url_param, page_number)
 
 def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date=''):
     # Get first page to determine total pages
+
+    # if unleashed_data_name == 'SalesOrdersDate': unleashed_data_name = 'SalesOrders'
+
     first_page = get_page_data(unleashed_data_name, url_param, 1, start_date, end_date)
     total_pages = first_page.get("Pagination", {}).get("NumberOfPages", 1)
     all_items = first_page.get("Items", [])
@@ -308,6 +339,12 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
 
     df = pd.DataFrame(all_items)
 
+    # file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_{unleashed_data_name}_data.xlsx"
+    # os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    # df.to_excel(file_path, index=False)
+    # print(f"Excel file written to: {file_path}")
+    # print("DID IT")
+
     # Apply appropriate cleaning
     if unleashed_data_name == 'Products':
         df = clean_products_data(df)
@@ -323,6 +360,8 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
         df = clean_warehouses_data(df)
     elif unleashed_data_name == 'Customers':
         df = clean_customers_data(df)
+    elif unleashed_data_name == 'SalesOrdersDate':
+        df = clean_sales_orders_date(df)
     else:
         df = clean_sales_orders(df)
 
@@ -330,6 +369,7 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
     # os.makedirs(os.path.dirname(file_path), exist_ok=True)
     # df.to_excel(file_path, index=False)
     # print(f"Excel file written to: {file_path}")
+    # print("DID IT")
 
     return df
 
