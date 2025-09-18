@@ -80,3 +80,15 @@ def unwrap_warehouse_sales_orders(df):
     final_df['ProductGroup'] = final_df['ProductGroup'].fillna('No Product Group')
 
     return final_df
+
+
+def get_parts_list():
+    parts_groups = ['Battery',
+                    'Bottom Brackets', 'Brakes', 'Chargers',
+                    'Cockpit', 'Controllers', 'Conversion Kit', 'Derailleur Hangers',
+                    'Displays', 'Drivetrain', 'Electronics', 'Fenders', 'Forks', 'Frame',
+                    'Headset', 'Lights', 'Motor Wheels', 'Motors',
+                    'Racks', 'Scooters', 'Shifters', 'Throttles', 'Tires', 'Tubes',
+                    'Wheels', 'Derailleurs']
+
+    return parts_groups

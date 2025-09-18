@@ -26,7 +26,9 @@ df_salesorders = AI_Automation_SalesOrders_clean(start_date, end_date, reload=re
 
 # print(df_salesorders.loc[df_salesorders['SerialNumber_Identifier'] == 'ZY25022844'])
 
-serial_number = 'ZY25022844'
+
+# serial_number = 'ZY25022476'
+serial_number = 'ZY25020089'
 df_product = df_salesorders.loc[df_salesorders['SerialNumber_Identifier'] == serial_number]
 
 sales_order_number = df_product['SalesOrderNumber'].iloc[0]
@@ -38,10 +40,10 @@ print("Product Description: ", product_description)
 
 
 if product_description == 'Cosmo 2.0 T - Black- 48v 15 Ah':
-    product_code = 'CPO23150051'
+    product_code = 'CPO23150052'
 
 elif product_description == 'Cosmo 2.0 T - Calypso - 48v 15 Ah':
-    product_code = 'CPO23150052'
+    product_code = 'CPO23150051'
 
 else: product_code = 'Not Cosmo 2.0'
 
@@ -59,6 +61,8 @@ import hmac
 import hashlib
 import base64
 import json
+from datetime import datetime, timezone
+
 from datetime import datetime
 
 # Replace with your actual credentials
@@ -77,7 +81,7 @@ def create_stock_adjustment(product_code, warehouse_code, quantity, comment="Man
         "Warehouse": {
             "WarehouseCode": warehouse_code
         },
-        "AdjustmentDate": datetime.now().strftime('%Y-%m-%dT%H:%M:%S'), #this line might not be correct
+        "AdjustmentDate": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
         "AdjustmentReason": "Adjustment",
         "Status": "Completed", #if does not work delete this
         "StockAdjustmentLines": [
