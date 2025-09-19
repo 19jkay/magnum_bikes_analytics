@@ -15,8 +15,8 @@ one_year_ago = today - timedelta(days=365)
 one_year_ago_str = one_year_ago.strftime('%Y-%m-%d')
 # print("one year ago: ", one_year_ago_str)
 
-start_date = '2025-08-01'
-end_date = '2025-09-01' #always do one more here than you do in unleashed view sales orders
+start_date = '2025-09-01'
+end_date = '2025-09-15' #always do one more here than you do in unleashed view sales orders
 
 reload_data = True
 save_excel = False
