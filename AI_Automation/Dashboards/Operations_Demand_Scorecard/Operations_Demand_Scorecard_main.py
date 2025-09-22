@@ -15,15 +15,23 @@ one_year_ago = today - timedelta(days=365)
 one_year_ago_str = one_year_ago.strftime('%Y-%m-%d')
 # print("one year ago: ", one_year_ago_str)
 
-start_date = '2025-09-01'
-end_date = '2025-09-15' #always do one more here than you do in unleashed view sales orders
+start_date = '2025-08-01'
+end_date = '2025-09-01' #always do one more here than you do in unleashed view sales orders
 
 reload_data = True
-save_excel = False
+save_excel = True
+
+
+
+df_PurchaseOrders = Unleashed_PurchaseOrders_clean_data_parallel(start_date=start_date, end_date=end_date, reload=reload_data, save_excel=save_excel)
+
+
 
 df_SalesOrders_completed_dates = get_data_parallel(unleashed_data_name="SalesOrders", start_date=start_date, end_date=end_date)
 df_SalesOrders_order_dates = get_data_parallel(unleashed_data_name="SalesOrdersDate", start_date=start_date, end_date=end_date)
+
 df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
+
 # df_PurchaseOrders = Unleashed_PurchaseOrders_clean_data_parallel(start_date=start_date, end_date=end_date, reload=reload_data, save_excel=save_excel)
 
 # df_SalesOrders = df_SalesOrders[['CompletedDate', 'OrderStatus']]
@@ -90,6 +98,16 @@ df_unwrapped_salesorders_order_dates_backorder_parts = df_unwrapped_salesorders_
     (df_unwrapped_salesorders_order_dates['OrderStatus'] == 'Backordered')
     & (df_unwrapped_salesorders_order_dates['ProductGroup'].isin(get_parts_list()))]
 print("Parts in back orders: ", df_unwrapped_salesorders_order_dates_backorder_parts['OrderQuantity'].sum())
+
+
+
+
+print("////////////////////////")
+print("Procurement")
+print("Purchases")
+PurchaseOrders_status_counts = df_PurchaseOrders['OrderStatus'].value_counts()
+print("PurchaseOrders")
+print(PurchaseOrders_status_counts)
 
 
 

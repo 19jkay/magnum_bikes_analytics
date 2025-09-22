@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import webbrowser
+from datetime import datetime
 
 from DASH.DASH_Helper import DASH_Helper_get_product_info
 
@@ -77,6 +78,8 @@ def write_consensus_report_old(df, product_name, path, selected_month, selected_
     full_path = os.path.join(output_dir, filename)
 
 
+
+
     row1 = ['Year-Month'] + df['Year-Month'].tolist()
     row2 = [product_name] + df['Final Consensus'].tolist()
     row3 = [product_name] + df['Purchases'].tolist()
@@ -108,11 +111,10 @@ def write_consensus_report_old(df, product_name, path, selected_month, selected_
 
 
 def write_consensus_report(df, product_name, path, selected_month, selected_year):
-    df.set_index('Metric', inplace=True)
-    df = df.T
-    df.index.name = 'Year-Month'
-    df.reset_index(inplace=True)
-    df = df[['Year-Month', 'Final Consensus', 'Purchases']]
+    # df.set_index('Metric', inplace=True)
+    # df = df.T
+    # df.index.name = 'Year-Month'
+    # df.reset_index(inplace=True)
 
     product_guid, avg_cost = DASH_Helper_get_product_info(product_name)
     # df['Final Consensus'] = (avg_cost * df['Final Consensus']).round(2)
@@ -127,6 +129,29 @@ def write_consensus_report(df, product_name, path, selected_month, selected_year
     os.makedirs(output_dir, exist_ok=True)  # Ensure directory exists
     filename = f"{file_name}_{target_period}.{extension}"
     full_path = os.path.join(output_dir, filename)
+
+    # # Second folder that saves everything
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp_month = datetime.now().strftime("%Y%m")
+    filename_folder_save = 'Umbrella_Save_'+timestamp_month
+
+    timestamped_dir = os.path.join(r"C:\Users\joshu\Documents\DASH", filename_folder_save)
+    os.makedirs(timestamped_dir, exist_ok=True)
+
+    safe_product_name = product_name.replace("/", "_").replace(":", "_")
+
+    filename_umbrella_save = f"{safe_product_name}_{timestamp}.{extension}"
+    timestamped_path = os.path.join(timestamped_dir, filename_umbrella_save)
+    # print("Product Name: ", safe_product_name)
+    # print("Umbrella save path:", timestamped_path)
+    df.to_excel(timestamped_path, index=False, header=True)
+
+    df.set_index('Metric', inplace=True)
+    df = df.T
+    df.index.name = 'Year-Month'
+    df.reset_index(inplace=True)
+
+    df = df[['Year-Month', 'Final Consensus', 'Purchases']]
 
 
     row1 = ['Year-Month'] + df['Year-Month'].tolist()

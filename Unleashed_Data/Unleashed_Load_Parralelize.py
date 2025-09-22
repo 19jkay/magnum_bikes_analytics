@@ -271,7 +271,8 @@ def clean_purchase_orders(df):
     # convert weird date format to regular date
     final_df['OrderDate'] = final_df['OrderDate'].apply(convert_ms_date).dt.date.astype(str)
     final_df['DeliveryDate'] = final_df['DeliveryDate'].apply(convert_ms_date).dt.date.astype(str)
-    final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
+    # final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date)
 
     return final_df
 

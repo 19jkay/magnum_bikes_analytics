@@ -8,17 +8,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
-import re
-from datetime import datetime
-
-def convert_ms_date(ms_date_str):
-    match = re.search(r'\d+', str(ms_date_str))
-    if match:
-        timestamp_ms = int(match.group())
-        return datetime.utcfromtimestamp(timestamp_ms / 1000)
-    return None  # Handle cases like NaN or malformed strings
-
-
+from Unleashed_Data.Unleashed_Helper import convert_ms_date
 
 def configure():
     load_dotenv()
@@ -56,6 +46,71 @@ def unleashed_api_get_request(url_base, page_number, url_param):
 
 
 
+
+
+def get_products_helper(unleashed_data_name, url_param="", page_number=1):
+    url_base = unleashed_data_name + "/Page"
+    return unleashed_api_get_request(url_base, page_number, url_param)
+
+# def get_customers_helper(unleashed_data_name, url_param="", page_number=1):
+#     url_base = unleashed_data_name + "/Page"
+#     return unleashed_api_get_request(url_base, page_number, url_param)
+
+def get_invoices_helper(unleashed_data_name, start_date, end_date, url_param="", page_number=1):
+    url_param = f"startDate={start_date}&endDate={end_date}"
+
+    url_base = unleashed_data_name + "/Page"
+    unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
+
+    return unleashed_json
+
+# def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param="", page_number=1):
+#     url_param = f"asAtDate={end_date}"
+#
+#     url_base = unleashed_data_name + "/Page"
+#     unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
+#
+#     return unleashed_json
+
+
+def get_stock_on_hand_helper_old(unleashed_data_name, end_date, url_param=None, page_number=1):
+    # Build query parameters
+    warehouse_name = url_param
+    url_params = [f"asAtDate={end_date}"]
+    if warehouse_name:
+        url_params.append(f"warehouseName={warehouse_name}")
+
+    # Join parameters into a single query string
+    url_param = "?" + "&".join(url_params)
+
+    # Construct base URL and make API request
+    url_base = unleashed_data_name + "/Page"
+    unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
+
+    return unleashed_json
+
+
+def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param=None, page_number=1):
+    # Build query parameters
+    url_params = [f"asAtDate={end_date}"]
+    if url_param:
+        url_params.extend(url_param)
+
+    # if warehouse_name:
+    #     url_params.append(f"warehouseName={warehouse_name}")
+    # if product_id:
+    #     url_params.append(f"productCode={product_id}")  # or productId depending on API spec
+
+    # Join parameters into a single query string
+    query_string = "?" + "&".join(url_params)
+
+    # Construct base URL and make API request
+    url_base = unleashed_data_name + "/Page"
+    unleashed_json = unleashed_api_get_request(url_base, page_number, query_string)
+
+    return unleashed_json
+
+
 def get_sales_orders(unleashed_data_name, start_date, end_date, url_param="", page_number=1):
     # url_param = f"completedAfter={start_date}&completedBefore={end_date}"
 
@@ -69,8 +124,88 @@ def get_sales_orders(unleashed_data_name, start_date, end_date, url_param="", pa
 
     return unleashed_json
 
+def get_sales_orders_date(unleashed_data_name, start_date, end_date, url_param, page_number):
+    # Include serialBatch=true to get serial numbers in the response
+    # url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true"
+    url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true&orderStatus=Open,Completed,Backordered,Parked,Placed,Deleted,Accounting"
+
+    url_base = 'SalesOrders' + "/Page"
+    unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
+
+    return unleashed_json
 
 
+def get_purchase_orders(unleashed_data_name, start_date, end_date, url_param="", page_number=1):
+    url_param = f"startDate={start_date}&endDate={end_date}"
+
+    url_base = unleashed_data_name + "/Page"
+    unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
+
+    return unleashed_json
+
+def get_warehouses_helper(unleashed_data_name, url_param="", page_number=1):
+    url_base = unleashed_data_name + "/Page"
+    return unleashed_api_get_request(url_base, page_number, url_param)
+
+def get_customers_helper(unleashed_data_name, url_param="", page_number=1):
+    url_base = unleashed_data_name + "/Page"
+    return unleashed_api_get_request(url_base, page_number, url_param)
+
+
+
+
+
+
+
+def clean_products_data(df):
+    customer_df = df['ProductGroup'].apply(pd.Series)
+    df_expanded = pd.concat([df.drop(columns=['ProductGroup']), customer_df], axis=1)
+
+    #rename GroupName to ProductGroup
+    df_expanded.rename(columns={'GroupName': 'ProductGroup'}, inplace=True)
+
+    return df_expanded
+
+
+def clean_invoices_data(df):
+    # The customer colum holds a dictionary, unpack the customer column so each part of dictionary is column
+    # Expand the 'Customer' column into multiple columns
+    customer_df = df['Customer'].apply(pd.Series)
+    df_expanded = pd.concat([df.drop(columns=['Customer']), customer_df], axis=1)
+    df_expanded = df_expanded.rename(columns={'LastModifiedOn': 'Customer_LastModifiedOn'})
+
+    # The InvoiceLines column has a list of dictionaries for each individual purchase. Make each dictionary a row in the dataframe
+    # Step 1: Create a copy without the 'InvoiceLines' column
+    base_df = df_expanded.drop(columns=['InvoiceLines'])
+    # Step 2: Convert 'InvoiceLines' list of dicts into a separate DataFrame
+    lines_df = df_expanded[['InvoiceLines']].explode('InvoiceLines').reset_index()
+    # Step 3: Normalize each dictionary into its own row
+    invoice_lines_expanded = pd.json_normalize(lines_df['InvoiceLines'])
+    # Step 4: Merge base invoice info with each invoice line
+    final_df = pd.concat([base_df.loc[lines_df['index']].reset_index(drop=True), invoice_lines_expanded], axis=1)
+    final_df = final_df.rename(columns={'LastModifiedOn': 'InvoiceLines_LastModifiedOn'})
+
+    print(f"Total invoices fetched after cleaning: {len(final_df)}")
+
+    # convert weird date format to regular date
+    final_df['InvoiceDate'] = final_df['InvoiceDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['DueDate'] = final_df['DueDate'].apply(convert_ms_date).dt.date.astype(str)
+    # CAN PROBABLY REMOVE THIS ONE
+    final_df['Customer_LastModifiedOn'] = final_df['Customer_LastModifiedOn'].apply(convert_ms_date).dt.date.astype(str)
+
+    final_df['InvoiceLines_LastModifiedOn'] = final_df['InvoiceLines_LastModifiedOn'].apply(convert_ms_date).dt.date.astype(str)
+    # final_df['LastModifiedOn'] = final_df['LastModifiedOn'].apply(convert_ms_date).dt.date.astype(str)
+
+    return final_df
+
+
+def clean_stock_on_hand(df):
+    if df.empty:
+        print("No stock on hand.")
+    else:
+        df['LastModifiedOn'] = df['LastModifiedOn'].apply(convert_ms_date).dt.date.astype(str)
+        df['Bike_type'] = df['ProductDescription'].str.extract(r'^\s*(.*?)\s*-\s*')
+    return df
 
 def clean_sales_orders(df):
     # print(f"Load len before: {len(df)}")
@@ -100,14 +235,89 @@ def clean_sales_orders(df):
     final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
     return final_df
 
+    # seriel_number_df = final_df['SerialNumbers'].apply(pd.Series)
+    # df_end = pd.concat([final_df.drop(columns=['SerialNumbers']), seriel_number_df], axis=1)
+    # df_end = df_end.rename(columns={'LastModifiedOn': 'SarielNumber_LastModifiedOn'})
+    # df_end = df_end.rename(columns={'Guid': 'SerialNumber_Guid'})
+    # df_end = df_end.rename(columns={'Identifier': 'SerialNumber_Identifier'})
+    #
+    # return df_end
+
+
+def clean_sales_orders_date(df):
+    return df
+
+def clean_purchase_orders(df):
+    purchaseOrder_df = df['Supplier'].apply(pd.Series)
+    df_expanded = pd.concat([df.drop(columns=['Supplier']), purchaseOrder_df], axis=1)
+
+    # The InvoiceLines column has a list of dictionaries for each individual purchase. Make each dictionary a row in the dataframe
+    # Step 1: Create a copy without the 'InvoiceLines' column
+    base_df = df_expanded.drop(columns=['PurchaseOrderLines'])
+    # Step 2: Convert 'InvoiceLines' list of dicts into a separate DataFrame
+    lines_df = df_expanded[['PurchaseOrderLines']].explode('PurchaseOrderLines').reset_index()
+    # Step 3: Normalize each dictionary into its own row
+    invoice_lines_expanded = pd.json_normalize(lines_df['PurchaseOrderLines'])
+    invoice_lines_expanded = invoice_lines_expanded.rename(columns={'DeliveryDate': 'PurchaseOrderLines_DeliveryDate'})
+    # Step 4: Merge base invoice info with each invoice line
+    final_df = pd.concat([base_df.loc[lines_df['index']].reset_index(drop=True), invoice_lines_expanded], axis=1)
+
+    final_df = final_df.rename(columns={'LastModifiedOn': 'PurchaseOrderLines_LastModifiedOn'})
+    final_df = final_df.rename(columns={'LastModifiedBy': 'PurchaseOrderLines_LastModifiedBy'})
+
+    final_df = final_df.rename(columns={'Product.ProductCode': 'ProductCode'})
+    final_df = final_df.rename(columns={'Product.ProductDescription': 'ProductDescription'})
+
+    # convert weird date format to regular date
+    final_df['OrderDate'] = final_df['OrderDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['DeliveryDate'] = final_df['DeliveryDate'].apply(convert_ms_date).dt.date.astype(str)
+    # final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date)
+
+    return final_df
+
+def clean_warehouses_data(df):
+    return df
+
+def clean_customers_data(df):
+    # The InvoiceLines column has a list of dictionaries for each individual purchase. Make each dictionary a row in the dataframe
+    # Step 1: Create a copy without the 'InvoiceLines' column
+    base_df = df.drop(columns=['Addresses'])
+    # Step 2: Convert 'InvoiceLines' list of dicts into a separate DataFrame
+    lines_df = df[['Addresses']].explode('Addresses').reset_index()
+    # Step 3: Normalize each dictionary into its own row
+    customers_lines_expanded = pd.json_normalize(lines_df['Addresses'])
+    # Step 4: Merge base invoice info with each invoice line
+    final_df = pd.concat([base_df.loc[lines_df['index']].reset_index(drop=True), customers_lines_expanded], axis=1)
+    final_df = final_df.rename(columns={'LastModifiedOn': 'Addresses_LastModifiedOn'})
+
+    final_df['CreatedOn'] = final_df['CreatedOn'].apply(convert_ms_date).dt.date.astype(str)
+
+    return final_df
 
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def get_page_data(unleashed_data_name, url_param, page_number, start_date='', end_date=''):
-
-    get_sales_orders(unleashed_data_name, start_date, end_date, url_param, page_number)
+    if unleashed_data_name == 'Products':
+        return get_products_helper(unleashed_data_name, url_param, page_number)
+    elif unleashed_data_name == 'Invoices':
+        return get_invoices_helper(unleashed_data_name, start_date, end_date, url_param, page_number)
+    elif unleashed_data_name == 'StockOnHand':
+        return get_stock_on_hand_helper(unleashed_data_name, end_date, url_param, page_number)
+    elif unleashed_data_name == 'Customers':
+        return get_customers_helper(unleashed_data_name, url_param, page_number)
+    elif unleashed_data_name == 'PurchaseOrders':
+        return get_purchase_orders(unleashed_data_name, start_date, end_date, url_param, page_number)
+    elif unleashed_data_name == 'Warehouses':
+        return get_warehouses_helper(unleashed_data_name, url_param, page_number)
+    elif unleashed_data_name == 'Customers':
+        return get_customers_helper(unleashed_data_name, url_param, page_number)
+    elif unleashed_data_name == 'SalesOrdersDate':
+        return get_sales_orders_date(unleashed_data_name, start_date, end_date, url_param, page_number)
+    else:
+        return get_sales_orders(unleashed_data_name, start_date, end_date, url_param, page_number)
 
 def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date=''):
     # Get first page to determine total pages
@@ -136,8 +346,25 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
     # print(f"Excel file written to: {file_path}")
     # print("DID IT")
 
-
-    df = clean_sales_orders(df)
+    # Apply appropriate cleaning
+    if unleashed_data_name == 'Products':
+        df = clean_products_data(df)
+    elif unleashed_data_name == 'Invoices':
+        df = clean_invoices_data(df)
+    elif unleashed_data_name == 'StockOnHand':
+        df = clean_stock_on_hand(df)
+    elif unleashed_data_name == 'Customers':
+        df = clean_customers_data(df)
+    elif unleashed_data_name == 'PurchaseOrders':
+        df = clean_purchase_orders(df)
+    elif unleashed_data_name == 'Warehouses':
+        df = clean_warehouses_data(df)
+    elif unleashed_data_name == 'Customers':
+        df = clean_customers_data(df)
+    elif unleashed_data_name == 'SalesOrdersDate':
+        df = clean_sales_orders_date(df)
+    else:
+        df = clean_sales_orders(df)
 
     # file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_{unleashed_data_name}_data.xlsx"
     # os.makedirs(os.path.dirname(file_path), exist_ok=True)

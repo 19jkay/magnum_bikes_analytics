@@ -396,7 +396,8 @@ def dash_ibd_bike_launch(series, analytical_forecast, financial_forecast, produc
     })
 
     #add final consensus column that is average of forecasts
-    data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
+    # data['Final Consensus'] = 1 / 2 * (data['Analytical Forecast (Kay)'] + data['Financial Forecast (Poll)'])
+    data['Final Consensus'] = data['Analytical Forecast (Kay)']
 
     # dash_app(data, product_name, path)
 

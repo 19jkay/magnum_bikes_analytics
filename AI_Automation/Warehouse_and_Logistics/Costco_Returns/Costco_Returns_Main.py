@@ -16,7 +16,7 @@ end_date = today_str
 warehouse_code = 'Costco Returns'
 quantity = 1
 
-reload_data = False
+reload_data = True
 save_excel = False
 
 
