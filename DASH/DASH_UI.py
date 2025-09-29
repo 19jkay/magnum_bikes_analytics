@@ -1,5 +1,6 @@
 # from rapidfuzz import process
 from rapidfuzz import fuzz, process
+import time
 
 from Product_Forecasting.Product_Forecast_Clean import *
 from DASH.DASH_main import dash_bike_launch, dash_parts_launch, dash_parts_other_launch, dash_accessories_launch, \
@@ -53,6 +54,7 @@ if __name__ == "__main__":
     def reload_df_for_dash(product_name, path):
         # path_segment = r'Products\Product_SKUs'
         # df = reload_df_for_dash(product_name=product_name, path_segment=path_segment)
+
         filename_suffix = "consensus_data"
         extension = "xlsx"
 
@@ -67,6 +69,8 @@ if __name__ == "__main__":
         full_path = os.path.join(output_dir, filename)
 
         df = pd.read_excel(full_path)
+
+
         return df
 
 

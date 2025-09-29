@@ -320,6 +320,52 @@ def Unleashed_StockOnHand_clean_data_parallel(end_date, reload=True, save_excel=
     return df
 
 
+def Unleashed_stock_adjustment_clean_data_parallel(start_date, reload=True, save_excel=True):
+    if reload:
+        df_stock_adjustment = get_data_parallel(unleashed_data_name='StockAdjustments', start_date=start_date)
+
+        df = df_stock_adjustment
+        df.rename(columns={'Product.ProductCode' : 'ProductCode'}, inplace=True)
+        df.rename(columns={'Product.ProductDescription': 'ProductDescription'}, inplace=True)
+
+        df = df[['AdjustmentNumber', 'AdjustmentDate', 'Status', 'AccountCode', 'WarehouseCode', 'NewQuantity',  'Comments', 'ProductCode', 'ProductDescription', 'SerialNumber']]
+
+        if save_excel:
+            file_path = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_clean_stock_adjustment_data.xlsx"
+            folder_path = os.path.dirname(file_path)
+            os.makedirs(folder_path, exist_ok=True)
+            df.to_excel(file_path, index=False)
+            print(f"Excel file written to: {file_path}")
+
+    else:
+        Stock_adjustment_FILENAME = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_clean_stock_adjustment_data.xlsx"
+        df = pd.read_excel(Stock_adjustment_FILENAME)
+
+    return df
+
+
+def Unleashed_credit_note_clean_data_parallel(start_date, end_date, reload=True, save_excel=True):
+    if reload:
+        df_credit_notes = get_data_parallel(unleashed_data_name='CreditNotes', start_date=start_date, end_date=end_date)
+
+        df = df_credit_notes
+        df.rename(columns={'Product.ProductCode' : 'ProductCode'}, inplace=True)
+        df.rename(columns={'Product.ProductDescription': 'ProductDescription'}, inplace=True)
+
+        df = df[['CreditDate', 'CreditNoteNumber', 'Status', 'WarehouseCode', 'ProductCode', 'ProductDescription', 'SerialNumber']]
+
+        if save_excel:
+            file_path = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_clean_credit_notes_data.xlsx"
+            folder_path = os.path.dirname(file_path)
+            os.makedirs(folder_path, exist_ok=True)
+            df.to_excel(file_path, index=False)
+            print(f"Excel file written to: {file_path}")
+
+    else:
+        credit_notes_FILENAME = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_clean_credit_notes_data.xlsx"
+        df = pd.read_excel(credit_notes_FILENAME)
+
+    return df
 
 # start_date = '2025-01-04'
 # end_date = '2025-09-02'

@@ -1,6 +1,6 @@
 from Reports.Reports_Clean import Unleashed_PowerBI_SalesOrder_data, Unleashed_PowerBI_Inventory_data
 from Reports.Reports_Helper import get_date_info
-from Reports.Reports_Clean import Quickbooks_PowerBI_PandL_data, Unleashed_PowerBI_PurchaseOrders_data, Unleashed_PowerBI_WOH_report
+from Reports.Reports_Clean import Quickbooks_PowerBI_PandL_data, Unleashed_PowerBI_PurchaseOrders_data, Unleashed_PowerBI_WOH_report, Unleashed_PowerBI_Costco_Returns
 
 
 def PowerBI_KPIs_data(reload):
@@ -23,8 +23,13 @@ def PowerBI_Inventory_data(reload):
     df_WOH = Unleashed_PowerBI_WOH_report(reload=reload)
     return df_WOH
 
+def PowerBI_Costco_Returns(reload):
+    df_costco_returns_stock_adjustment, df_costco_returns_credit_notes = Unleashed_PowerBI_Costco_Returns(reload)
+    return df_costco_returns_stock_adjustment, df_costco_returns_credit_notes
+
 
 #get TTM sales data for PowerBI
 reload = True
-df_SalesOrders = PowerBI_KPIs_data(reload=reload)
-df_WOH = PowerBI_Inventory_data(reload=reload)
+# df_SalesOrders = PowerBI_KPIs_data(reload=reload)
+# df_WOH = PowerBI_Inventory_data(reload=reload)
+df_costco_returns_stock_adjustment, df_costco_returns_credit_notes = PowerBI_Costco_Returns(reload=reload)

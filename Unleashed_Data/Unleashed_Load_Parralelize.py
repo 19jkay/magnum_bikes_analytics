@@ -151,8 +151,21 @@ def get_customers_helper(unleashed_data_name, url_param="", page_number=1):
     url_base = unleashed_data_name + "/Page"
     return unleashed_api_get_request(url_base, page_number, url_param)
 
+def get_stock_adjustment_data(unleashed_data_name, adjustment_date, url_param="", page_number=1):
+    url_param = f"adjustmentDate={adjustment_date}"
 
+    url_base = unleashed_data_name + "/Page"
+    unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
 
+    return unleashed_json
+
+def get_credit_notes_data(unleashed_data_name, start_date, end_date, url_param="", page_number=1):
+    url_param = f"startDate={start_date}&endDate={end_date}"
+
+    url_base = unleashed_data_name + "/Page"
+    unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
+
+    return unleashed_json
 
 
 
@@ -295,6 +308,75 @@ def clean_customers_data(df):
 
     return final_df
 
+def clean_stock_adjustment_data(df):
+    warehouse_df = df['Warehouse'].apply(pd.Series)
+    df_expanded = pd.concat([df.drop(columns=['Warehouse']), warehouse_df], axis=1)
+    df_expanded = df_expanded.rename(columns={'LastModifiedOn': 'Warehouse_LastModifiedOn'})
+
+    # The InvoiceLines column has a list of dictionaries for each individual purchase. Make each dictionary a row in the dataframe
+    # Step 1: Create a copy without the 'InvoiceLines' column
+    base_df = df_expanded.drop(columns=['StockAdjustmentLines'])
+    # Step 2: Convert 'InvoiceLines' list of dicts into a separate DataFrame
+    lines_df = df_expanded[['StockAdjustmentLines']].explode('StockAdjustmentLines').reset_index()
+    # Step 3: Normalize each dictionary into its own row
+    invoice_lines_expanded = pd.json_normalize(lines_df['StockAdjustmentLines'])
+    # Step 4: Merge base invoice info with each invoice line
+    final_df = pd.concat([base_df.loc[lines_df['index']].reset_index(drop=True), invoice_lines_expanded], axis=1)
+
+    # Step 1: Create a copy without the 'InvoiceLines' column
+    base_df = final_df.drop(columns=['SerialNumbers'])
+    # Step 2: Convert 'InvoiceLines' list of dicts into a separate DataFrame
+    lines_df = final_df[['SerialNumbers']].explode('SerialNumbers').reset_index()
+    # Step 3: Normalize each dictionary into its own row
+    serial_lines_expanded = pd.json_normalize(lines_df['SerialNumbers'])
+    # Step 4: Merge base invoice info with each invoice line
+    final_df = pd.concat([base_df.loc[lines_df['index']].reset_index(drop=True), serial_lines_expanded], axis=1)
+    final_df.rename(columns={'Identifier': 'SerialNumber'}, inplace=True)
+
+
+
+    final_df['AdjustmentDate'] = final_df['AdjustmentDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['CreatedOn'] = final_df['CreatedOn'].apply(convert_ms_date).dt.date.astype(str)
+    # final_df['LastModifiedOn'] = final_df['LastModifiedOn'].apply(convert_ms_date).dt.date.astype(str)
+    return final_df
+
+def clean_credit_notes_data(df):
+    customer_df = df['Customer'].apply(pd.Series)
+    df_expanded = pd.concat([df.drop(columns=['Customer']), customer_df], axis=1)
+    df_expanded = df_expanded.rename(columns={'LastModifiedOn': 'Customer_LastModifiedOn'})
+    df_expanded = df_expanded.rename(columns={'Guid': 'Customer_Guid'})
+
+    warehouse_df = df_expanded['Warehouse'].apply(pd.Series)
+    df_expanded = pd.concat([df_expanded.drop(columns=['Warehouse']), warehouse_df], axis=1)
+    df_expanded = df_expanded.rename(columns={'LastModifiedOn': 'Warehouse_LastModifiedOn'})
+    df_expanded = df_expanded.rename(columns={'Guid': 'Warehouse_Guid'})
+
+    # The InvoiceLines column has a list of dictionaries for each individual purchase. Make each dictionary a row in the dataframe
+    # Step 1: Create a copy without the 'InvoiceLines' column
+    base_df = df_expanded.drop(columns=['CreditLines'])
+    # Step 2: Convert 'InvoiceLines' list of dicts into a separate DataFrame
+    lines_df = df_expanded[['CreditLines']].explode('CreditLines').reset_index()
+    # Step 3: Normalize each dictionary into its own row
+    credit_lines_expanded = pd.json_normalize(lines_df['CreditLines'])
+    # Step 4: Merge base invoice info with each invoice line
+    final_df = pd.concat([base_df.loc[lines_df['index']].reset_index(drop=True), credit_lines_expanded], axis=1)
+
+    # Step 1: Create a copy without the 'InvoiceLines' column
+    base_df = final_df.drop(columns=['SerialNumbers'])
+    # Step 2: Convert 'InvoiceLines' list of dicts into a separate DataFrame
+    lines_df = final_df[['SerialNumbers']].explode('SerialNumbers').reset_index()
+    # Step 3: Normalize each dictionary into its own row
+    serial_lines_expanded = pd.json_normalize(lines_df['SerialNumbers'])
+    # Step 4: Merge base invoice info with each invoice line
+    final_df = pd.concat([base_df.loc[lines_df['index']].reset_index(drop=True), serial_lines_expanded], axis=1)
+    final_df.rename(columns={'Identifier': 'SerialNumber'}, inplace=True)
+
+    final_df['CreatedOn'] = final_df['CreatedOn'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['CreditDate'] = final_df['CreditDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['SalesInvoiceDate'] = final_df['SalesInvoiceDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['RequiredDeliveryDate'] = final_df['RequiredDeliveryDate'].apply(convert_ms_date).dt.date.astype(str)
+
+    return final_df
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -316,6 +398,10 @@ def get_page_data(unleashed_data_name, url_param, page_number, start_date='', en
         return get_customers_helper(unleashed_data_name, url_param, page_number)
     elif unleashed_data_name == 'SalesOrdersDate':
         return get_sales_orders_date(unleashed_data_name, start_date, end_date, url_param, page_number)
+    elif unleashed_data_name == 'StockAdjustments':
+        return get_stock_adjustment_data(unleashed_data_name, start_date, url_param, page_number)
+    elif unleashed_data_name == 'CreditNotes':
+        return get_credit_notes_data(unleashed_data_name, start_date, end_date, url_param, page_number)
     else:
         return get_sales_orders(unleashed_data_name, start_date, end_date, url_param, page_number)
 
@@ -363,14 +449,18 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
         df = clean_customers_data(df)
     elif unleashed_data_name == 'SalesOrdersDate':
         df = clean_sales_orders_date(df)
+    elif unleashed_data_name == 'StockAdjustments':
+        df = clean_stock_adjustment_data(df)
+    elif unleashed_data_name == 'CreditNotes':
+        df = clean_credit_notes_data(df)
     else:
         df = clean_sales_orders(df)
 
-    # file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_{unleashed_data_name}_data.xlsx"
-    # os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    # df.to_excel(file_path, index=False)
-    # print(f"Excel file written to: {file_path}")
-    # print("DID IT")
+    file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_{unleashed_data_name}_data.xlsx"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    df.to_excel(file_path, index=False)
+    print(f"Excel file written to: {file_path}")
+    print("DID IT")
 
     return df
 
