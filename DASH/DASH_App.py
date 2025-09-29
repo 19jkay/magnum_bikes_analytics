@@ -197,30 +197,37 @@ def dash_app(data, product_name, path):
     import os
     import time
 
+
+
     matplotlib.use('Agg')
 
-    bottom_table_df = pd.DataFrame([['' for _ in range(3)] for _ in range(10)],
-                                   columns=['Col 1', 'Col 2', 'Col 3'])
+    bottom_table_df = pd.DataFrame([['' for _ in range(2)] for _ in range(7)],
+                                   columns=['Metric', 'Value'])
 
     # Preprocess date
     data['Year-Month'] = pd.to_datetime(data['Year-Month'])
     data['Year-Month'] = data['Year-Month'].dt.to_period('M').dt.to_timestamp().dt.strftime('%Y-%m')
+
+    data['Comments'] = ''
 
     inventory_name = [col for col in data.columns if col.startswith('Inventory')][0]
     print("in app: ", inventory_name)
 
     data = update_data(data, inventory_name)
 
-    metrics = ['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', inventory_name, 'Ending Inventory', 'Purchases']
+    # metrics = ['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', inventory_name, 'Ending Inventory', 'Purchases']
+    metrics = ['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', inventory_name, 'Ending Inventory', 'Purchases', 'Comments']
     data = data[['Year-Month'] + metrics]
 
     transposed = data.set_index('Year-Month').T
     transposed.reset_index(inplace=True)
     transposed.rename(columns={'index': 'Metric'}, inplace=True)
 
+    start = time.time()
     # app = Dash(__name__)
     app = Dash(__name__, serve_locally=True)
     server = app.server  # Access Flask server
+    print("Layout build time:", time.time() - start)
 
     # Add shutdown route
     @server.route('/shutdown', methods=['POST'])
@@ -277,44 +284,187 @@ def dash_app(data, product_name, path):
     #     Input('metric-selector', 'value')
     # )
 
-    start = time.time()
+
+
+
+
+
+
+    # app.layout = html.Div([
+    #     html.H1(product_name + " Forecast Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
+    #
+    #     dash_table.DataTable(
+    #         id='editable-table',
+    #         data=transposed.to_dict('records'),
+    #         columns=[{'name': col, 'id': col, 'editable': True} for col in transposed.columns],
+    #         style_table={'overflowX': 'auto'}
+    #     ),
+    #
+    #
+    #     # Graph and bottom table side by side
+    #     html.Div([
+    #         html.Div([
+    #             dcc.Graph(id='line-chart', style={'height': '600px', 'width': '100%'})
+    #         ], style={'flex': '3'}),
+    #
+    #         html.Div([
+    #             # html.H4("Editable Table (Bottom Right)", style={'textAlign': 'center'}),
+    #             html.H4("Notes", style={'textAlign': 'center'}),
+    #             dash_table.DataTable(
+    #                 id='bottom-table',
+    #                 data=bottom_table_df.to_dict('records'),
+    #                 columns=[{'name': col, 'id': col, 'editable': True} for col in bottom_table_df.columns],
+    #                 style_table={'width': '300px', 'margin': 'auto'},
+    #                 style_cell={'textAlign': 'center'}
+    #             )
+    #         ], style={'flex': '1', 'paddingLeft': '20px', 'alignSelf': 'flex-start'})
+    #     ], style={'display': 'flex', 'marginTop': '30px'}),
+    #
+    #
+    #     html.Label("Select metrics to display:"),
+    #     dcc.Checklist(
+    #         id='metric-selector',
+    #         options=[{'label': m, 'value': m} for m in metrics],
+    #         value=['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', inventory_name],
+    #         inline=True
+    #     ),
+    #
+    #
+    #     html.Div([
+    #         html.Label("Select Month:"),
+    #         dcc.Dropdown(
+    #             id='month-dropdown',
+    #             options=[{'label': f'{m:02d}', 'value': f'{m:02d}'} for m in range(1, 13)],
+    #             placeholder='Select month'
+    #         ),
+    #         html.Label("Select Year:"),
+    #         dcc.Dropdown(
+    #             id='year-dropdown',
+    #             options=[{'label': str(y), 'value': str(y)} for y in range(2025, 2031)],
+    #             placeholder='Select year'
+    #         ),
+    #         html.Button('Save', id='save-button', n_clicks=0, style={'marginTop': '10px'}),
+    #         html.Button("Quit App", id="quit-btn"),
+    #         html.Div(id="status")
+    #     ], style={'marginTop': '20px'})
+    # ])
+
+
+
+
+
+    # app.layout = html.Div([
+    #     html.H1(product_name + " Forecast Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
+    #
+    #     # Notes (left) and Editable table (right) side-by-side
+    #     html.Div([
+    #         html.Div([
+    #             html.H4("Notes", style={'textAlign': 'center', 'marginBottom': '8px'}),
+    #             dash_table.DataTable(
+    #                 id='bottom-table',
+    #                 data=bottom_table_df.to_dict('records'),
+    #                 columns=[{'name': col, 'id': col, 'editable': True} for col in bottom_table_df.columns],
+    #                 style_table={'width': '320px', 'margin': '0'},
+    #                 style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'},
+    #                 tooltip_header={col: 'Notes / comments' for col in bottom_table_df.columns}
+    #             )
+    #         ], style={'flex': '1', 'paddingRight': '16px', 'minWidth': '260px'}),  # left column
+    #
+    #         html.Div([
+    #             dash_table.DataTable(
+    #                 id='editable-table',
+    #                 data=transposed.to_dict('records'),
+    #                 columns=[{'name': col, 'id': col, 'editable': True} for col in transposed.columns],
+    #                 style_table={'overflowX': 'auto'},
+    #                 style_cell={'textAlign': 'center', 'minWidth': '80px'},
+    #             )
+    #         ], style={'flex': '3', 'minWidth': '400px'})  # right column (editable table)
+    #     ], style={'display': 'flex', 'alignItems': 'flex-start', 'marginTop': '10px'}),
+    #
+    #     # Graph and Notes (bottom-right) side by side
+    #     html.Div([
+    #         html.Div([
+    #             dcc.Graph(id='line-chart', style={'height': '600px', 'width': '100%'})
+    #         ], style={'flex': '3'}),
+    #     ], style={'display': 'flex', 'marginTop': '30px'}),
+    #
+    #     html.Label("Select metrics to display:"),
+    #     dcc.Checklist(
+    #         id='metric-selector',
+    #         options=[{'label': m, 'value': m} for m in metrics],
+    #         value=['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', inventory_name],
+    #         inline=True
+    #     ),
+    #
+    #     html.Div([
+    #         html.Label("Select Month:"),
+    #         dcc.Dropdown(
+    #             id='month-dropdown',
+    #             options=[{'label': f'{m:02d}', 'value': f'{m:02d}'} for m in range(1, 13)],
+    #             placeholder='Select month'
+    #         ),
+    #         html.Label("Select Year:"),
+    #         dcc.Dropdown(
+    #             id='year-dropdown',
+    #             options=[{'label': str(y), 'value': str(y)} for y in range(2025, 2031)],
+    #             placeholder='Select year'
+    #         ),
+    #         html.Button('Save', id='save-button', n_clicks=0, style={'marginTop': '10px'}),
+    #         html.Button("Quit App", id="quit-btn"),
+    #         html.Div(id="status")
+    #     ], style={'marginTop': '20px'})
+    # ])
 
     app.layout = html.Div([
         html.H1(product_name + " Forecast Dashboard", style={'textAlign': 'center', 'marginBottom': '20px'}),
 
-        dash_table.DataTable(
-            id='editable-table',
-            data=transposed.to_dict('records'),
-            columns=[{'name': col, 'id': col, 'editable': True} for col in transposed.columns],
-            style_table={'overflowX': 'auto'}
-        ),
+        # Notes (left) and Editable table (right) side-by-side — flush top alignment
+        html.Div([
+            # Left: Notes column (fixed width)
+            html.Div([
+                html.Div("KPIs", style={'textAlign': 'center', 'margin': '0 0 6px 0', 'fontWeight': '600'}),
+                dash_table.DataTable(
+                    id='bottom-table',
+                    data=bottom_table_df.to_dict('records'),
+                    columns=[{'name': col, 'id': col, 'editable': True} for col in bottom_table_df.columns],
+                    style_table={'width': '280px', 'margin': '0'},
+                    style_cell={'textAlign': 'center', 'whiteSpace': 'normal', 'height': 'auto', 'padding': '6px'},
+                    tooltip_header={col: 'Notes / comments' for col in bottom_table_df.columns}
+                )
+            ], style={'flex': '0 0 300px', 'paddingRight': '8px', 'boxSizing': 'border-box'}),
+
+            # Right: Forecast editable table (flexible width)
+            html.Div([
+                html.Div(product_name + " Forecast",
+                         style={'textAlign': 'center', 'margin': '0 0 6px 0', 'fontWeight': '600'}),
+                dash_table.DataTable(
+                    id='editable-table',
+                    data=transposed.to_dict('records'),
+                    columns=[{'name': col, 'id': col, 'editable': True} for col in transposed.columns],
+                    style_table={'overflowX': 'auto', 'margin': '0'},
+                    style_cell={'textAlign': 'center', 'minWidth': '80px', 'padding': '6px'},
+                )
+            ], style={'flex': '1 1 0px', 'minWidth': '400px', 'boxSizing': 'border-box'})
+        ], style={
+            'display': 'flex',
+            'alignItems': 'flex-start',  # ensures top edges are aligned
+            'gap': '8px',  # small horizontal gap so the two tables are close but not touching
+            'marginTop': '10px'
+        }),
+
+        # Graph (below)
+        html.Div([
+            dcc.Graph(id='line-chart', style={'height': '600px', 'width': '100%'})
+        ], style={'display': 'flex', 'marginTop': '30px'}),
 
         html.Label("Select metrics to display:"),
         dcc.Checklist(
             id='metric-selector',
             options=[{'label': m, 'value': m} for m in metrics],
-            value=['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', inventory_name],
+            # value=['Analytical Forecast (Kay)', 'Financial Forecast (Poll)', 'Final Consensus', inventory_name],
+            value=['Final Consensus', inventory_name],
             inline=True
         ),
-
-        # Graph and bottom table side by side
-        html.Div([
-            html.Div([
-                dcc.Graph(id='line-chart', style={'height': '600px', 'width': '100%'})
-            ], style={'flex': '3'}),
-
-            html.Div([
-                # html.H4("Editable Table (Bottom Right)", style={'textAlign': 'center'}),
-                html.H4("Notes", style={'textAlign': 'center'}),
-                dash_table.DataTable(
-                    id='bottom-table',
-                    data=bottom_table_df.to_dict('records'),
-                    columns=[{'name': col, 'id': col, 'editable': True} for col in bottom_table_df.columns],
-                    style_table={'width': '300px', 'margin': 'auto'},
-                    style_cell={'textAlign': 'center'}
-                )
-            ], style={'flex': '1', 'paddingLeft': '20px', 'alignSelf': 'flex-start'})
-        ], style={'display': 'flex', 'marginTop': '30px'}),
 
         html.Div([
             html.Label("Select Month:"),
@@ -334,7 +484,10 @@ def dash_app(data, product_name, path):
             html.Div(id="status")
         ], style={'marginTop': '20px'})
     ])
-    print("Layout build time:", time.time() - start)
+
+
+
+
 
     @app.callback(
         Output('line-chart', 'figure'),
@@ -351,7 +504,8 @@ def dash_app(data, product_name, path):
         df.index.name = 'Year-Month'
         df.reset_index(inplace=True)
 
-        for col in df.columns[1:]:
+        # for col in df.columns[1:]:
+        for col in df.columns[1:-1]:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
         if all(metric in df.columns for metric in metrics):
@@ -363,7 +517,8 @@ def dash_app(data, product_name, path):
         for col in selected_metrics:
             fig.add_trace(go.Scatter(x=df['Year-Month'], y=df[col], mode='lines+markers', name=col))
 
-        fig.update_layout(title='Metrics Over Time', xaxis_title='Year-Month', yaxis_title='Value')
+        # fig.update_layout(title='Metrics Over Time', xaxis_title='Year-Month', yaxis_title='Value')
+        fig.update_layout(xaxis_title='Year-Month', yaxis_title='Value')
 
         updated_transposed = df.set_index('Year-Month').T
         updated_transposed.reset_index(inplace=True)
