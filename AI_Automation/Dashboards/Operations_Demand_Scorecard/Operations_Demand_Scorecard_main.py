@@ -2,7 +2,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import os
 
-from Unleashed_Data.Unleashed_Clean_Parallel import Unleashed_SalesOrders_clean_data_parallel, Unleashed_PurchaseOrders_clean_data_parallel
+from Unleashed_Data.Unleashed_Clean_Parallel import Unleashed_SalesOrders_clean_data_parallel, Unleashed_PurchaseOrders_clean_data_parallel, Unleashed_stock_adjustment_clean_data_parallel, Unleashed_credit_note_clean_data_parallel
 from Unleashed_Data.Unleashed_Load_Parralelize import get_data_parallel
 from AI_Automation.Dashboards.Operations_Demand_Scorecard.Operations_Demand_Scorecard_helper import unwrap_sales_orders, unwrap_warehouse_sales_orders, get_parts_list
 
@@ -16,8 +16,8 @@ one_year_ago = today - timedelta(days=365)
 one_year_ago_str = one_year_ago.strftime('%Y-%m-%d')
 # print("one year ago: ", one_year_ago_str)
 
-start_date = '2025-09-15'
-end_date = '2025-09-27' #always do one more here than you do in unleashed view sales orders
+start_date = '2025-09-22'
+end_date = '2025-10-02' #always do one more here than you do in unleashed view sales orders
 
 reload_data = False
 save_excel = False
@@ -218,11 +218,41 @@ Inventory_control = ['Weekly parts sample audit', 'Accuracy %', 'Full Montly Cyc
 
 
 
-
+print("Bike Returns")
 Bike_returns = ['Costco Returns', 'Other Returns', 'Total Returns', 'Refurbished', 'Shipped to Jam-N', 'In BY', 'Stripped for Parts', 'Total refurb parts', 'Returns Backlog']
+df_stock_adjustment = Unleashed_stock_adjustment_clean_data_parallel(start_date=start_date, reload=True, save_excel=True)
+df_credit_notes = Unleashed_credit_note_clean_data_parallel(start_date=start_date, end_date=end_date, reload=True, save_excel=True)
 
+CPO_codes = ['CPO23150052', 'CPO23150051']
+df_stock_adjustment_costco_returns_CPOcosmos_completed = df_stock_adjustment.loc[(df_stock_adjustment['ProductCode'].isin(CPO_codes)) & (df_stock_adjustment['Status'] == 'Completed')].copy()
+df_stock_adjustment_costco_returns_CPOcosmos_completed['AdjustmentDate'] = pd.to_datetime(df_stock_adjustment_costco_returns_CPOcosmos_completed['AdjustmentDate'])
+df_stock_adjustment_costco_returns_CPOcosmos_completed = df_stock_adjustment_costco_returns_CPOcosmos_completed.loc[df_stock_adjustment_costco_returns_CPOcosmos_completed['AdjustmentDate'] < end_date].copy()
+costco_returns_cosmo = len(df_stock_adjustment_costco_returns_CPOcosmos_completed)
 
+lowrider_cruiser_product_codes = ['Low Rider BLK-GPH', 'Low Rider - BLK-CPR', 'Cruiser BLK-GPH', 'Cruiser BLK-CPR']
+df_credit_notes_costco_returns_lowriders_cruisers = df_credit_notes.loc[(df_credit_notes['ProductCode'].isin(lowrider_cruiser_product_codes)) & (df_credit_notes['Status'] == 'Completed')].copy()
 
+costco_returns_lowriders_cruisers = len(df_credit_notes_costco_returns_lowriders_cruisers)
+
+costco_returns = costco_returns_cosmo + costco_returns_lowriders_cruisers
+# Bike_returns_values.append(costco_returns)
+print("Cosmo returns: ", costco_returns_cosmo)
+print("Costco Returns: ", costco_returns)
+
+other_returns = 0
+# Bike_returns_values.append(other_returns)
+
+total_returns = costco_returns + other_returns
+# Bike_returns_values.append(total_returns)
+
+refurbished = 0
+shipped_to_JamN = 0
+in_by = 0
+stripped_for_parts = 0
+total_refurb_parts = 0
+return_backlog = 0
+
+Bike_returns_values = [costco_returns, other_returns, total_returns, refurbished, shipped_to_JamN, in_by, stripped_for_parts, total_refurb_parts, return_backlog]
 
 
 
