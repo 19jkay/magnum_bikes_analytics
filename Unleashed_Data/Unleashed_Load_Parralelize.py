@@ -426,11 +426,11 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
 
     df = pd.DataFrame(all_items)
 
-    # file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_{unleashed_data_name}_data.xlsx"
-    # os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    # df.to_excel(file_path, index=False)
-    # print(f"Excel file written to: {file_path}")
-    # print("DID IT")
+    file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_{unleashed_data_name}_data.xlsx"
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    df.to_excel(file_path, index=False)
+    print(f"Excel file written to: {file_path}")
+    print("DID IT")
 
     # Apply appropriate cleaning
     if unleashed_data_name == 'Products':

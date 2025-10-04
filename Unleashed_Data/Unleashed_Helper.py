@@ -2,6 +2,8 @@ import re
 from datetime import datetime
 
 def convert_ms_date(ms_date_str):
+    import re
+    from datetime import datetime
     match = re.search(r'\d+', str(ms_date_str))
     if match:
         timestamp_ms = int(match.group())
