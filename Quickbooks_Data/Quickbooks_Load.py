@@ -2,9 +2,6 @@ import json
 import os
 import requests
 import pandas as pd
-import urllib.parse #encode spaces in sql queries for proper reading
-
-from pandas import json_normalize
 
 from Quickbooks_Data.intuitlib.client import AuthClient
 from Quickbooks_Data.intuitlib.enums import Scopes
@@ -141,15 +138,49 @@ def Quickbooks_pl_report_clean(start_date, end_date):
     return df
 
 
+def get_ARAgingDetail(access_token, start_date="2025-04-18", end_date="2025-05-17"):
+    base_url = 'https://quickbooks.api.intuit.com'
+
+    url = (
+        f"{base_url}/v3/company/{realm_id}/reports/AgedReceivableDetail"
+        f"?report_date={start_date}&minorversion=75"
+    )
+
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Accept': 'application/json'
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        print("✅ Success: ARAgingDetail report fetched.")
+        return response.json()
+    else:
+        print(f"❌ Error: {response.status_code}")
+        print(response.text)
+        return None
+
+# def clean_ARAgingDetail(start_date):
+
+
+
+
+
 # MAIN EXECUTION
 def main():
     configure()
-    first_time_auth() #Uncomment the line below only once to initialize your tokens
+    # first_time_auth() #Uncomment the line below only once to initialize your tokens
 
     access_token = get_valid_access_token()
 
+
     start_date = "2024-06-25"
     end_date = "2025-06-24"
+
+    # ar_aging_detail = get_ARAgingDetail(access_token, start_date)
+    #
+    # print(ar_aging_detail)
+    # print("DID IT")
 
     pl_data = get_pl_report(access_token, start_date, end_date)
 
@@ -236,3 +267,4 @@ def main():
             index=True
         )
 
+# main()

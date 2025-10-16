@@ -9,6 +9,25 @@ from pyzipcode import ZipCodeDatabase
 
 
 
+def Unleashed_PowerBI_Invoices_data(start_date, end_date, reload, save_excel=False):
+    if reload:
+        df_invoices = Unleashed_Invoices_clean_data_parallel(start_date=start_date, end_date=end_date, reload=reload, save_excel=save_excel)
+
+        df = df_invoices
+
+        file_path = r"C:\Users\joshu\Documents\Reporting\PowerBI_data\unleashed_reports_invoices_data.xlsx"
+        folder_path = os.path.dirname(file_path)
+        os.makedirs(folder_path, exist_ok=True)
+        df.to_excel(file_path, index=False)
+        print(f"Excel file written to: {file_path}")
+
+
+    else:
+        Unleashed_PowerBI_Invoices_data_FILENAME = r"C:\Users\joshu\Documents\Reporting\PowerBI_data\unleashed_reports_invoices_data.xlsx"
+        df = pd.read_excel(Unleashed_PowerBI_Invoices_data_FILENAME)
+
+    return df
+
 
 def Unleashed_PowerBI_SalesOrder_data(start_date, end_date, reload, save_excel=False):
 
@@ -246,7 +265,42 @@ def Unleashed_PowerBI_WOH_report(reload):
     return df_report
 
 
-def Unleashed_PowerBI_Costco_Returns(reload):
+def Unleashed_PowerBI_Costco_Returns(start_date, end_date, reload, save_excel=False):
+    from datetime import datetime, timedelta
+    if reload:
+
+        # df_stock_adjustment = get_data_parallel(unleashed_data_name='StockAdjustments', start_date=start_date)
+        df_stock_adjustment = Unleashed_stock_adjustment_clean_data_parallel(start_date=start_date, reload=True, save_excel=True)
+        df_credit_notes = Unleashed_credit_note_clean_data_parallel(start_date=start_date, end_date=end_date, reload=True, save_excel=True)
+
+        #cosmo returns stock adjustment
+        CPO_codes = ['CPO23150052', 'CPO23150051']
+        df_stock_adjustment_costco_returns_CPOcosmos_completed = df_stock_adjustment.loc[
+            (df_stock_adjustment['ProductCode'].isin(CPO_codes))
+            & (df_stock_adjustment['Status'] == 'Completed')].copy()
+
+        df_stock_adjustment_costco_returns_CPOcosmos_completed['Return Quantity'] = 1
+        df_stock_adjustment_costco_returns_CPOcosmos_completed = df_stock_adjustment_costco_returns_CPOcosmos_completed[
+            ['AdjustmentDate', 'ProductCode', 'ProductDescription', 'SerialNumber', 'Return Quantity']]
+        df_stock_adjustment_costco_returns_CPOcosmos_completed.rename(columns={'AdjustmentDate': 'Date'}, inplace=True)
+
+        #cosmo returns credit note
+        cosmo_product_codes = ['23150052', '23150051']
+        df_credit_notes_costco_returns_cosmos_completed = df_credit_notes.loc[(df_credit_notes['Status'] == 'Completed')
+                                                                              & (df_credit_notes['WarehouseCode'] == 'Costco Returns')
+                                                                              & (df_credit_notes['ProductCode'].isin(cosmo_product_codes))].copy()
+
+        df_credit_notes_costco_returns_cosmos_completed['Return Quantity'] = 1
+        df_credit_notes_costco_returns_cosmos_completed = df_credit_notes_costco_returns_cosmos_completed[
+            ['CreditDate', 'ProductCode', 'ProductDescription', 'SerialNumber', 'Return Quantity']]
+        df_credit_notes_costco_returns_cosmos_completed.rename(columns={'CreditDate': 'Date'}, inplace=True)
+
+        df_cosmo_returns = pd.concat(
+            [df_stock_adjustment_costco_returns_CPOcosmos_completed, df_credit_notes_costco_returns_cosmos_completed],
+            axis=0, ignore_index=True)
+
+
+def Unleashed_PowerBI_Costco_Returns2(reload):
     from datetime import datetime, timedelta
     if reload:
         today = datetime.today()
@@ -357,313 +411,313 @@ def Unleashed_PowerBI_Costco_Returns(reload):
     return df_stock_adjustment_costco_returns_CPOcosmos_completed, df_credit_notes_costco_returns_cosmos_completed
 
 
-def clustered_comments():
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
-    # Paste the list produced earlier (or load from file). Example variable name: clustered_comments
-    clustered_comments = [
-        {"comment": "NOT CHARGINGC/D", "cluster": "Battery & Charging Issues"},
-        {"comment": "CORD IS NOT LONG ENOUGH", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "TIRES NOT FUNCTIONING", "cluster": "Brake & Tire Issues"},
-        {"comment": "QUIT WORKING", "cluster": "General Dissatisfaction"},
-        {"comment": "ROTTER ON FRONT TIRE BENT", "cluster": "Brake & Tire Issues"},
-        {"comment": "USED", "cluster": "General Dissatisfaction"},
-        {"comment": "TOO FAST", "cluster": "Performance Complaints"},
-        {"comment": "D RAIL IS SLIPPING", "cluster": "Mechanical Failures"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "IT WOULD NOT CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "BRAKES DONT WORK WELL", "cluster": "Brake & Tire Issues"},
-        {"comment": "GOTB THE WRONG ONE", "cluster": "General Dissatisfaction"},
-        {"comment": "PEDAL BROKE", "cluster": "Mechanical Failures"},
-        {"comment": "DERAILER IS OFF LIGHT ISNT BRIGHT", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "DOESN'T WANT", "cluster": "General Dissatisfaction"},
-        {"comment": "USED. TOO HEAVY AND TOO BIG", "cluster": "Too Heavy / Too Big"},
-        {"comment": "BREAKS ARE SQUELING", "cluster": "Brake & Tire Issues"},
-        {"comment": "DOESNT WORK", "cluster": "General Dissatisfaction"},
-        {"comment": "DW", "cluster": "General Dissatisfaction"},
-        {"comment": "BATTERY WILL NOTCHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "DEFECTIVE", "cluster": "General Dissatisfaction"},
-        {"comment": "SEAT KEPT MOVING", "cluster": "Mechanical Failures"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "WIFE SAID NO", "cluster": "General Dissatisfaction"},
-        {"comment": "TOO HEAVY NOTHING WRONG WITH IT", "cluster": "Too Heavy / Too Big"},
-        {"comment": "USED– TOO FAST FOR NEEDS", "cluster": "Performance Complaints"},
-        {"comment": "UDNW/ BATTERY DOES NOT WRK WELL", "cluster": "Battery & Charging Issues"},
-        {"comment": "REAR TIRE BLEW OFF THE BEAD. IT IS FLAT.", "cluster": "Brake & Tire Issues"},
-        {"comment": "BOUGHT TODAY CORD CUT", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "WIRE FOR LIGHT TO SHORT", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "BATTERY DOES NOT CHARGE AT ALL", "cluster": "Battery & Charging Issues"},
-        {"comment": "FOOT EDAL FELL OFF", "cluster": "Mechanical Failures"},
-        {"comment": "PUT TOGETHER WRONG", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "FLATTIRE", "cluster": "Brake & Tire Issues"},
-        {"comment": "TO HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "PART OF IT IS NOTWORKING", "cluster": "General Dissatisfaction"},
-        {"comment": "SON DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "BATTER BAD AND SHIFTS GEARS ITSELF ONHIL", "cluster": "Battery & Charging Issues"},
-        {"comment": "WIRE ASSEMBLE UNABLE TO ATTACH BASKET", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "WIFE DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "DIDNT WORK", "cluster": "General Dissatisfaction"},
-        {"comment": "ONE BOLT IS STRIPPED", "cluster": "Mechanical Failures"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "NO WANT", "cluster": "General Dissatisfaction"},
-        {"comment": "JUST WANTED TO TRY OUT", "cluster": "General Dissatisfaction"},
-        {"comment": "DEJO DE CARGA", "cluster": "Battery & Charging Issues"},
-        {"comment": "BRAKES DO NOT WORK", "cluster": "Brake & Tire Issues"},
-        {"comment": "DIDNT NEED IT NOTHING WRONG", "cluster": "General Dissatisfaction"},
-        {"comment": "DIES QUICK", "cluster": "Battery & Charging Issues"},
-        {"comment": "BENT FRAME", "cluster": "Mechanical Failures"},
-        {"comment": "WIRE PREVENTS STEERING", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "DID NOT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "DIDNT NEED", "cluster": "General Dissatisfaction"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "DOESNT CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "DOESNT WORK", "cluster": "General Dissatisfaction"},
-        {"comment": "BACK TIRE HAS LEAK", "cluster": "Brake & Tire Issues"},
-        {"comment": "BAD MAKES ALOT OF NOISE", "cluster": "Performance Complaints"},
-        {"comment": "AIR LEAKS IN TIRES", "cluster": "Brake & Tire Issues"},
-        {"comment": "WAS HARD TO ASSEMBLE", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "BREAKS DONT WORK", "cluster": "Brake & Tire Issues"},
-        {"comment": "PEOPLE GOT HURT ON IT", "cluster": "Performance Complaints"},
-        {"comment": "WAYYY TOO HEAVY AND BIG", "cluster": "Too Heavy / Too Big"},
-        {"comment": "NOT HOLDING A CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "PEDALS FELL OFF", "cluster": "Mechanical Failures"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "NOT WORKING", "cluster": "General Dissatisfaction"},
-        {"comment": "BATTERY WONT HOLD CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "GEARS SLIPPINGCHANGED MIND", "cluster": "Mechanical Failures"},
-        {"comment": "DOESNT THINK THEYLL USE IT", "cluster": "General Dissatisfaction"},
-        {"comment": "SLIGHTLY USED TOO BIG FOR PERSON", "cluster": "Too Heavy / Too Big"},
-        {"comment": "DOESNT CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "WASNT WORKING FOR THEM", "cluster": "General Dissatisfaction"},
-        {"comment": "STRIPPED BIKE PEDAL AREA", "cluster": "Mechanical Failures"},
-        {"comment": "DOESNT WORK", "cluster": "General Dissatisfaction"},
-        {"comment": "OCW USED NOT SATISFIED", "cluster": "General Dissatisfaction"},
-        {"comment": "TO HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "OPENED", "cluster": "General Dissatisfaction"},
-        {"comment": "ECOM/TOO BIG", "cluster": "Too Heavy / Too Big"},
-        {"comment": "FULLY CHARGED BUT ELECTRICS WONT WORK", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "BATTERY NOT CHARGIN", "cluster": "Battery & Charging Issues"},
-        {"comment": "WONT HOLD A CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "UNCONFORTABLE", "cluster": "General Dissatisfaction"},
-        {"comment": "DIDNT WANT", "cluster": "General Dissatisfaction"},
-        {"comment": "NOT POWERFUL ENOUGH", "cluster": "Performance Complaints"},
-        {"comment": "DEFECTIVE", "cluster": "General Dissatisfaction"},
-        {"comment": "TRIED DONT NEED", "cluster": "General Dissatisfaction"},
-        {"comment": "WRONG ONE", "cluster": "General Dissatisfaction"},
-        {"comment": "COULDNT GET TO WORK OTHER ONE DID", "cluster": "General Dissatisfaction"},
-        {"comment": "CHAIN COMES OFF– VERY HEAVY TOO!!!!", "cluster": "Mechanical Failures"},
-        {"comment": "PEDAL CAME OFF", "cluster": "Mechanical Failures"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "DNN", "cluster": "General Dissatisfaction"},
-        {"comment": "CABLE IS WRAPPED WRONG WAY", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "DID NOT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "REALLY HEAVY STARTS TO CLICK WHEN GOING", "cluster": "Mechanical Failures"},
-        {"comment": "DID NOT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "TO BIG", "cluster": "Too Heavy / Too Big"},
-        {"comment": "TOO BIG", "cluster": "Too Heavy / Too Big"},
-        {"comment": "DIDNT NEED", "cluster": "General Dissatisfaction"},
-        {"comment": "BACK WHEEL BENT", "cluster": "Brake & Tire Issues"},
-        {"comment": "PEDAL ASSIST DOES NOT WORK", "cluster": "Battery & Charging Issues"},
-        {"comment": "DIDNT NEED", "cluster": "General Dissatisfaction"},
-        {"comment": "TONS OF ISSUES", "cluster": "Mechanical Failures"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "FOUND BETTER DEAL", "cluster": "General Dissatisfaction"},
-        {"comment": "BIKE LAUNCHES FORWARD UNEXPECTANTLY", "cluster": "Performance Complaints"},
-        {"comment": "NOT FUNCTIONING PROPERLY", "cluster": "General Dissatisfaction"},
-        {"comment": "NEVER CHARGED NEVER WORKED OUT OF BOX", "cluster": "Battery & Charging Issues"},
-        {"comment": "USED", "cluster": "General Dissatisfaction"},
-        {"comment": "BATTERY DONT HOLD CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "DIDN'T NEED – OPENED", "cluster": "General Dissatisfaction"},
-        {"comment": "WANTS ANOTHER ONE", "cluster": "General Dissatisfaction"},
-        {"comment": "MISSING SCREWS", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "TOO BIG", "cluster": "Too Heavy / Too Big"},
-        {"comment": "CHAIN CAME OFF", "cluster": "Mechanical Failures"},
-        {"comment": "USED NOT HOLD CHARGE VERY LONG", "cluster": "Battery & Charging Issues"},
-        {"comment": "OPEN CAME DAMAGE", "cluster": "Mechanical Failures"},
-        {"comment": "MAMKING WERID STOPS", "cluster": "Performance Complaints"},
-        {"comment": "THEY BOUGHT A RETURN BUT IT DID NOT WORK", "cluster": "General Dissatisfaction"},
-        {"comment": "DW", "cluster": "General Dissatisfaction"},
-        {"comment": "TO BIG OPENED TRYED", "cluster": "Too Heavy / Too Big"},
-        {"comment": "TO SHORT FOR IT", "cluster": "Too Heavy / Too Big"},
-        {"comment": "BATTERY GETS TOO HOT", "cluster": "Battery & Charging Issues"},
-        {"comment": "FALLING APART", "cluster": "Mechanical Failures"},
-        {"comment": "MAKE NOISE", "cluster": "Performance Complaints"},
-        {"comment": "HAD A FLAT TIRE", "cluster": "Brake & Tire Issues"},
-        {"comment": "WONT CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "FLAT TIRE", "cluster": "Brake & Tire Issues"},
-        {"comment": "NOT HOLDING CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "TO BIG FOR CHILD", "cluster": "Too Heavy / Too Big"},
-        {"comment": "DIDNT T LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "BATTERY DIDN'T WORK IT DOESN'T TURN ON", "cluster": "Battery & Charging Issues"},
-        {"comment": "BAD", "cluster": "General Dissatisfaction"},
-        {"comment": "HAS AS SHORT IN THE WIRING", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "FRONT PIECE BROKEN", "cluster": "Mechanical Failures"},
-        {"comment": "RECIEVED BOX DAMAGED/ NOT OPENED", "cluster": "Mechanical Failures"},
-        {"comment": "CABLE IS NOTLONG ENOUGH ON LIGHT", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "WONT CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "NO LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "TOO MUCH GOING OUTN", "cluster": "Performance Complaints"},
-        {"comment": "JUST NOT WORTH THE MONEY", "cluster": "General Dissatisfaction"},
-        {"comment": "847 WONT TURN ON", "cluster": "Battery & Charging Issues"},
-        {"comment": "SQEAKING", "cluster": "Performance Complaints"},
-        {"comment": "TOO TALL", "cluster": "Too Heavy / Too Big"},
-        {"comment": "CHAIN BROKE", "cluster": "Mechanical Failures"},
-        {"comment": "DIDNT LIE", "cluster": "General Dissatisfaction"},
-        {"comment": "DINDT WANT", "cluster": "General Dissatisfaction"},
-        {"comment": "NOT VERY FAST DONT LIKE IT", "cluster": "Performance Complaints"},
-        {"comment": "BATTERY LIFE", "cluster": "Battery & Charging Issues"},
-        {"comment": "IT A CRAPPY BIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "KEEPS SHUTTING OFF RANDOMLY", "cluster": "Battery & Charging Issues"},
-        {"comment": "USED DOESNT PEDAL COMES OFF", "cluster": "Mechanical Failures"},
-        {"comment": "HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "TOO BIG FOR KIDS", "cluster": "Too Heavy / Too Big"},
-        {"comment": "WRONG ITEM ADVERTISED", "cluster": "General Dissatisfaction"},
-        {"comment": "BAD BATTERY WONT HOLD CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "WASNT CHARGING / BOUGHT LESS THAN A WEEK", "cluster": "Battery & Charging Issues"},
-        {"comment": "TOO HEAVY TO USE", "cluster": "Too Heavy / Too Big"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "BROKEN", "cluster": "Mechanical Failures"},
-        {"comment": "NO LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "DOES NOT WORK PROPERLY", "cluster": "General Dissatisfaction"},
-        {"comment": "TIRE IS FLAT", "cluster": "Brake & Tire Issues"},
-        {"comment": "SEAT DOESNT STAYUP", "cluster": "Mechanical Failures"},
-        {"comment": "NEVER OPENED DAMAGED BOX", "cluster": "Mechanical Failures"},
-        {"comment": "TOO BIG TOO HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "ELECTRIC PART NOT WORKING", "cluster": "Battery & Charging Issues"},
-        {"comment": "CANT GO UPHILL AS FAST AS DOWNHILL", "cluster": "Performance Complaints"},
-        {"comment": "DIDNT WANT NEED", "cluster": "General Dissatisfaction"},
-        {"comment": "NOT CHARGING", "cluster": "Battery & Charging Issues"},
-        {"comment": "DIDNT LIKE/ USED", "cluster": "General Dissatisfaction"},
-        {"comment": "GOT WRONG COLOR", "cluster": "General Dissatisfaction"},
-        {"comment": "CABLE BROKE ON FRONT", "cluster": "Mechanical Failures"},
-        {"comment": "BREAKS ACTING WEIRD", "cluster": "Brake & Tire Issues"},
-        {"comment": "DOESNT WORK", "cluster": "Battery & Charging Issues"},
-        {"comment": "USED –TOO POWERFUL", "cluster": "Performance Complaints"},
-        {"comment": "BATTERY ISSUE", "cluster": "Battery & Charging Issues"},
-        {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "ECOM– WANTED A DIFERENT ONE", "cluster": "General Dissatisfaction"},
-        {"comment": "NEVER PROPERLY WORKED.", "cluster": "Battery & Charging Issues"},
-        {"comment": "TOO JERKY", "cluster": "Performance Complaints"},
-        {"comment": "CLICKING AND GEARS SLIPPING", "cluster": "Mechanical Failures"},
-        {"comment": "ECOM", "cluster": "General Dissatisfaction"},
-        {"comment": "ECOM", "cluster": "General Dissatisfaction"},
-        {"comment": "MECHANISM WON'T UNBOLT FOR LIGHT", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "ECOMM ARRIVED LATE", "cluster": "General Dissatisfaction"},
-        {"comment": "THE BRAKE BROKE", "cluster": "Brake & Tire Issues"},
-        {"comment": "SOMETIMES WORKS/ ERRRO", "cluster": "Battery & Charging Issues"},
-        {"comment": "NOT FAST ENOUGH", "cluster": "Performance Complaints"},
-        {"comment": "DIDNTWNAT", "cluster": "General Dissatisfaction"},
-        {"comment": "ONLINE...NEW", "cluster": "General Dissatisfaction"},
-        {"comment": "KEEPS STOPPING ON THEM", "cluster": "General Dissatisfaction"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "TOO HEAVYY FOR PERSON", "cluster": "Too Heavy / Too Big"},
-        {"comment": "DOES NOTWORK FOR MEMBER", "cluster": "General Dissatisfaction"},
-        {"comment": "DIDNT WANT", "cluster": "General Dissatisfaction"},
-        {"comment": "NEVER WORKED", "cluster": "Battery & Charging Issues"},
-        {"comment": "DIDNLTIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "STOPPED WORKING", "cluster": "Battery & Charging Issues"},
-        {"comment": "MAKING NOISES", "cluster": "Performance Complaints"},
-        {"comment": "MULTIPLE MALFUNCTIONS", "cluster": "Mechanical Failures"},
-        {"comment": "DOESNT CHARGE OR START UP", "cluster": "Battery & Charging Issues"},
-        {"comment": "NEITHER OF THEM CHARGE OR START UP", "cluster": "Battery & Charging Issues"},
-        {"comment": "SQUEAKING BREAKS", "cluster": "Brake & Tire Issues"},
-        {"comment": "BREAKS SQUEAKS AND BAD GEARS", "cluster": "Brake & Tire Issues"},
-        {"comment": "NOT WORKING", "cluster": "General Dissatisfaction"},
-        {"comment": "IT WON'T START EVEN FULL CHARGED", "cluster": "Battery & Charging Issues"},
-        {"comment": "DOESNT CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "STOPPED WORKING", "cluster": "General Dissatisfaction"},
-        {"comment": "DIDNT WANT – OK PER AMANDA", "cluster": "General Dissatisfaction"},
-        {"comment": "USED", "cluster": "General Dissatisfaction"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "BROKEN", "cluster": "Mechanical Failures"},
-        {"comment": "DNW", "cluster": "General Dissatisfaction"},
-        {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "DIDNT LIKE BIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "SEAT BROKE WEAK LITTLE PIECES KEEPBREAK", "cluster": "Mechanical Failures"},
-        {"comment": "USED", "cluster": "General Dissatisfaction"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "RETURN BC FELL OFF BIKE", "cluster": "Mechanical Failures"},
-        {"comment": "FRONT TIRE FLAT F & B LIGHTS DON'T WORK", "cluster": "Brake & Tire Issues"},
-        {"comment": "NOT GOOD FOR HOLDING SURFBOARD", "cluster": "General Dissatisfaction"},
-        {"comment": "ELECTRONIC ISSUES", "cluster": "Battery & Charging Issues"},
-        {"comment": "CHANGED MIND", "cluster": "General Dissatisfaction"},
-        {"comment": "BOLT FELL OFF WHILE RIDING", "cluster": "Mechanical Failures"},
-        {"comment": "CHAINS NOT WORKING", "cluster": "Mechanical Failures"},
-        {"comment": "BROKEN", "cluster": "Mechanical Failures"},
-        {"comment": "DAMAGED TIRE", "cluster": "Brake & Tire Issues"},
-        {"comment": "UDW–WILL NOT TAKE ITS CHARGE", "cluster": "Battery & Charging Issues"},
-        {"comment": "WIFE SAID NO", "cluster": "General Dissatisfaction"},
-        {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "TIRE KEEPS BREAKING", "cluster": "Brake & Tire Issues"},
-        {"comment": "DONT WANT RTND OTHER BIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "FRONT TIRE JERKS", "cluster": "Brake & Tire Issues"},
-        {"comment": "WANTS A DIFFERENT BIKE", "cluster": "General Dissatisfaction"},
-        {"comment": "TOO HEAVY FOR MEMBER", "cluster": "Too Heavy / Too Big"},
-        {"comment": "TIRES WENT FLAT ON FIRST USE", "cluster": "Brake & Tire Issues"},
-        {"comment": "DIDTN WANT", "cluster": "General Dissatisfaction"},
-        {"comment": "DOESNT HAVE CHAIN GUARD", "cluster": "Mechanical Failures"},
-        {"comment": "HAS A BREAK INWIRE", "cluster": "Electrical / Assembly Problems"},
-        {"comment": "KICK STAND BROKE OFF", "cluster": "Mechanical Failures"},
-        {"comment": "BACK RIM DAMAGED WHEN SHIPPED", "cluster": "Mechanical Failures"},
-        {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
-        {"comment": "DOES NOT WORK", "cluster": "General Dissatisfaction"},
-        {"comment": "NOT SHIFTING CORRECTLY", "cluster": "Mechanical Failures"}
-    ]
-
-    # Create DataFrame
-    df = pd.DataFrame(clustered_comments)
-
-    # Basic cleaning (optional)
-    df['comment'] = df['comment'].astype(str).str.strip()
-    df['cluster'] = df['cluster'].astype('category')
-
-    # Aggregate counts
-    counts = df['cluster'].value_counts().reset_index()
-    counts.columns = ['cluster', 'count']
-
-    # Plot settings
-    sns.set(style="whitegrid")
-    palette = sns.color_palette("tab10", n_colors=len(counts))
-
-    # Horizontal bar chart (ranked)
-    plt.figure(figsize=(10, 6))
-    sns.barplot(
-        data=counts.sort_values('count', ascending=True),
-        x='count', y='cluster',
-        palette=palette
-    )
-    plt.title("Return Comments by Cluster")
-    plt.xlabel("Number of Comments")
-    plt.ylabel("")
-    for i, (count, cluster) in enumerate(zip(counts.sort_values('count', ascending=True)['count'],
-                                             counts.sort_values('count', ascending=True)['cluster'])):
-        plt.text(count + 0.5, i, str(count), va='center')
-    plt.tight_layout()
-    plt.show()
-
-    # Pie chart (percentage)
-    plt.figure(figsize=(7, 7))
-    plt.pie(
-        counts['count'],
-        labels=counts['cluster'],
-        autopct='%1.1f%%',
-        startangle=140,
-        colors=palette
-    )
-    plt.title("Return Comments Distribution")
-    plt.tight_layout()
-    plt.show()
-
-    # Optional: Save DF for later use
-    # df.to_csv("clustered_comments.csv", index=False)
-
-
-
-# clustered_comments()
+# def clustered_comments():
+#     import pandas as pd
+#     import matplotlib.pyplot as plt
+#     import seaborn as sns
+#
+#     # Paste the list produced earlier (or load from file). Example variable name: clustered_comments
+#     clustered_comments = [
+#         {"comment": "NOT CHARGINGC/D", "cluster": "Battery & Charging Issues"},
+#         {"comment": "CORD IS NOT LONG ENOUGH", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "TIRES NOT FUNCTIONING", "cluster": "Brake & Tire Issues"},
+#         {"comment": "QUIT WORKING", "cluster": "General Dissatisfaction"},
+#         {"comment": "ROTTER ON FRONT TIRE BENT", "cluster": "Brake & Tire Issues"},
+#         {"comment": "USED", "cluster": "General Dissatisfaction"},
+#         {"comment": "TOO FAST", "cluster": "Performance Complaints"},
+#         {"comment": "D RAIL IS SLIPPING", "cluster": "Mechanical Failures"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "IT WOULD NOT CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "BRAKES DONT WORK WELL", "cluster": "Brake & Tire Issues"},
+#         {"comment": "GOTB THE WRONG ONE", "cluster": "General Dissatisfaction"},
+#         {"comment": "PEDAL BROKE", "cluster": "Mechanical Failures"},
+#         {"comment": "DERAILER IS OFF LIGHT ISNT BRIGHT", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "DOESN'T WANT", "cluster": "General Dissatisfaction"},
+#         {"comment": "USED. TOO HEAVY AND TOO BIG", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "BREAKS ARE SQUELING", "cluster": "Brake & Tire Issues"},
+#         {"comment": "DOESNT WORK", "cluster": "General Dissatisfaction"},
+#         {"comment": "DW", "cluster": "General Dissatisfaction"},
+#         {"comment": "BATTERY WILL NOTCHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "DEFECTIVE", "cluster": "General Dissatisfaction"},
+#         {"comment": "SEAT KEPT MOVING", "cluster": "Mechanical Failures"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "WIFE SAID NO", "cluster": "General Dissatisfaction"},
+#         {"comment": "TOO HEAVY NOTHING WRONG WITH IT", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "USED– TOO FAST FOR NEEDS", "cluster": "Performance Complaints"},
+#         {"comment": "UDNW/ BATTERY DOES NOT WRK WELL", "cluster": "Battery & Charging Issues"},
+#         {"comment": "REAR TIRE BLEW OFF THE BEAD. IT IS FLAT.", "cluster": "Brake & Tire Issues"},
+#         {"comment": "BOUGHT TODAY CORD CUT", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "WIRE FOR LIGHT TO SHORT", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "BATTERY DOES NOT CHARGE AT ALL", "cluster": "Battery & Charging Issues"},
+#         {"comment": "FOOT EDAL FELL OFF", "cluster": "Mechanical Failures"},
+#         {"comment": "PUT TOGETHER WRONG", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "FLATTIRE", "cluster": "Brake & Tire Issues"},
+#         {"comment": "TO HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "PART OF IT IS NOTWORKING", "cluster": "General Dissatisfaction"},
+#         {"comment": "SON DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "BATTER BAD AND SHIFTS GEARS ITSELF ONHIL", "cluster": "Battery & Charging Issues"},
+#         {"comment": "WIRE ASSEMBLE UNABLE TO ATTACH BASKET", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "WIFE DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIDNT WORK", "cluster": "General Dissatisfaction"},
+#         {"comment": "ONE BOLT IS STRIPPED", "cluster": "Mechanical Failures"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "NO WANT", "cluster": "General Dissatisfaction"},
+#         {"comment": "JUST WANTED TO TRY OUT", "cluster": "General Dissatisfaction"},
+#         {"comment": "DEJO DE CARGA", "cluster": "Battery & Charging Issues"},
+#         {"comment": "BRAKES DO NOT WORK", "cluster": "Brake & Tire Issues"},
+#         {"comment": "DIDNT NEED IT NOTHING WRONG", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIES QUICK", "cluster": "Battery & Charging Issues"},
+#         {"comment": "BENT FRAME", "cluster": "Mechanical Failures"},
+#         {"comment": "WIRE PREVENTS STEERING", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "DID NOT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIDNT NEED", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "DOESNT CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "DOESNT WORK", "cluster": "General Dissatisfaction"},
+#         {"comment": "BACK TIRE HAS LEAK", "cluster": "Brake & Tire Issues"},
+#         {"comment": "BAD MAKES ALOT OF NOISE", "cluster": "Performance Complaints"},
+#         {"comment": "AIR LEAKS IN TIRES", "cluster": "Brake & Tire Issues"},
+#         {"comment": "WAS HARD TO ASSEMBLE", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "BREAKS DONT WORK", "cluster": "Brake & Tire Issues"},
+#         {"comment": "PEOPLE GOT HURT ON IT", "cluster": "Performance Complaints"},
+#         {"comment": "WAYYY TOO HEAVY AND BIG", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "NOT HOLDING A CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "PEDALS FELL OFF", "cluster": "Mechanical Failures"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "NOT WORKING", "cluster": "General Dissatisfaction"},
+#         {"comment": "BATTERY WONT HOLD CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "GEARS SLIPPINGCHANGED MIND", "cluster": "Mechanical Failures"},
+#         {"comment": "DOESNT THINK THEYLL USE IT", "cluster": "General Dissatisfaction"},
+#         {"comment": "SLIGHTLY USED TOO BIG FOR PERSON", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "DOESNT CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "WASNT WORKING FOR THEM", "cluster": "General Dissatisfaction"},
+#         {"comment": "STRIPPED BIKE PEDAL AREA", "cluster": "Mechanical Failures"},
+#         {"comment": "DOESNT WORK", "cluster": "General Dissatisfaction"},
+#         {"comment": "OCW USED NOT SATISFIED", "cluster": "General Dissatisfaction"},
+#         {"comment": "TO HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "OPENED", "cluster": "General Dissatisfaction"},
+#         {"comment": "ECOM/TOO BIG", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "FULLY CHARGED BUT ELECTRICS WONT WORK", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "BATTERY NOT CHARGIN", "cluster": "Battery & Charging Issues"},
+#         {"comment": "WONT HOLD A CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "UNCONFORTABLE", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIDNT WANT", "cluster": "General Dissatisfaction"},
+#         {"comment": "NOT POWERFUL ENOUGH", "cluster": "Performance Complaints"},
+#         {"comment": "DEFECTIVE", "cluster": "General Dissatisfaction"},
+#         {"comment": "TRIED DONT NEED", "cluster": "General Dissatisfaction"},
+#         {"comment": "WRONG ONE", "cluster": "General Dissatisfaction"},
+#         {"comment": "COULDNT GET TO WORK OTHER ONE DID", "cluster": "General Dissatisfaction"},
+#         {"comment": "CHAIN COMES OFF– VERY HEAVY TOO!!!!", "cluster": "Mechanical Failures"},
+#         {"comment": "PEDAL CAME OFF", "cluster": "Mechanical Failures"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "DNN", "cluster": "General Dissatisfaction"},
+#         {"comment": "CABLE IS WRAPPED WRONG WAY", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "DID NOT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "REALLY HEAVY STARTS TO CLICK WHEN GOING", "cluster": "Mechanical Failures"},
+#         {"comment": "DID NOT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "TO BIG", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "TOO BIG", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "DIDNT NEED", "cluster": "General Dissatisfaction"},
+#         {"comment": "BACK WHEEL BENT", "cluster": "Brake & Tire Issues"},
+#         {"comment": "PEDAL ASSIST DOES NOT WORK", "cluster": "Battery & Charging Issues"},
+#         {"comment": "DIDNT NEED", "cluster": "General Dissatisfaction"},
+#         {"comment": "TONS OF ISSUES", "cluster": "Mechanical Failures"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "FOUND BETTER DEAL", "cluster": "General Dissatisfaction"},
+#         {"comment": "BIKE LAUNCHES FORWARD UNEXPECTANTLY", "cluster": "Performance Complaints"},
+#         {"comment": "NOT FUNCTIONING PROPERLY", "cluster": "General Dissatisfaction"},
+#         {"comment": "NEVER CHARGED NEVER WORKED OUT OF BOX", "cluster": "Battery & Charging Issues"},
+#         {"comment": "USED", "cluster": "General Dissatisfaction"},
+#         {"comment": "BATTERY DONT HOLD CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "DIDN'T NEED – OPENED", "cluster": "General Dissatisfaction"},
+#         {"comment": "WANTS ANOTHER ONE", "cluster": "General Dissatisfaction"},
+#         {"comment": "MISSING SCREWS", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "TOO BIG", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "CHAIN CAME OFF", "cluster": "Mechanical Failures"},
+#         {"comment": "USED NOT HOLD CHARGE VERY LONG", "cluster": "Battery & Charging Issues"},
+#         {"comment": "OPEN CAME DAMAGE", "cluster": "Mechanical Failures"},
+#         {"comment": "MAMKING WERID STOPS", "cluster": "Performance Complaints"},
+#         {"comment": "THEY BOUGHT A RETURN BUT IT DID NOT WORK", "cluster": "General Dissatisfaction"},
+#         {"comment": "DW", "cluster": "General Dissatisfaction"},
+#         {"comment": "TO BIG OPENED TRYED", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "TO SHORT FOR IT", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "BATTERY GETS TOO HOT", "cluster": "Battery & Charging Issues"},
+#         {"comment": "FALLING APART", "cluster": "Mechanical Failures"},
+#         {"comment": "MAKE NOISE", "cluster": "Performance Complaints"},
+#         {"comment": "HAD A FLAT TIRE", "cluster": "Brake & Tire Issues"},
+#         {"comment": "WONT CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "FLAT TIRE", "cluster": "Brake & Tire Issues"},
+#         {"comment": "NOT HOLDING CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "TO BIG FOR CHILD", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "DIDNT T LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "BATTERY DIDN'T WORK IT DOESN'T TURN ON", "cluster": "Battery & Charging Issues"},
+#         {"comment": "BAD", "cluster": "General Dissatisfaction"},
+#         {"comment": "HAS AS SHORT IN THE WIRING", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "FRONT PIECE BROKEN", "cluster": "Mechanical Failures"},
+#         {"comment": "RECIEVED BOX DAMAGED/ NOT OPENED", "cluster": "Mechanical Failures"},
+#         {"comment": "CABLE IS NOTLONG ENOUGH ON LIGHT", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "WONT CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "NO LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "TOO MUCH GOING OUTN", "cluster": "Performance Complaints"},
+#         {"comment": "JUST NOT WORTH THE MONEY", "cluster": "General Dissatisfaction"},
+#         {"comment": "847 WONT TURN ON", "cluster": "Battery & Charging Issues"},
+#         {"comment": "SQEAKING", "cluster": "Performance Complaints"},
+#         {"comment": "TOO TALL", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "CHAIN BROKE", "cluster": "Mechanical Failures"},
+#         {"comment": "DIDNT LIE", "cluster": "General Dissatisfaction"},
+#         {"comment": "DINDT WANT", "cluster": "General Dissatisfaction"},
+#         {"comment": "NOT VERY FAST DONT LIKE IT", "cluster": "Performance Complaints"},
+#         {"comment": "BATTERY LIFE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "IT A CRAPPY BIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "KEEPS SHUTTING OFF RANDOMLY", "cluster": "Battery & Charging Issues"},
+#         {"comment": "USED DOESNT PEDAL COMES OFF", "cluster": "Mechanical Failures"},
+#         {"comment": "HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "TOO BIG FOR KIDS", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "WRONG ITEM ADVERTISED", "cluster": "General Dissatisfaction"},
+#         {"comment": "BAD BATTERY WONT HOLD CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "WASNT CHARGING / BOUGHT LESS THAN A WEEK", "cluster": "Battery & Charging Issues"},
+#         {"comment": "TOO HEAVY TO USE", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "BROKEN", "cluster": "Mechanical Failures"},
+#         {"comment": "NO LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "DOES NOT WORK PROPERLY", "cluster": "General Dissatisfaction"},
+#         {"comment": "TIRE IS FLAT", "cluster": "Brake & Tire Issues"},
+#         {"comment": "SEAT DOESNT STAYUP", "cluster": "Mechanical Failures"},
+#         {"comment": "NEVER OPENED DAMAGED BOX", "cluster": "Mechanical Failures"},
+#         {"comment": "TOO BIG TOO HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "ELECTRIC PART NOT WORKING", "cluster": "Battery & Charging Issues"},
+#         {"comment": "CANT GO UPHILL AS FAST AS DOWNHILL", "cluster": "Performance Complaints"},
+#         {"comment": "DIDNT WANT NEED", "cluster": "General Dissatisfaction"},
+#         {"comment": "NOT CHARGING", "cluster": "Battery & Charging Issues"},
+#         {"comment": "DIDNT LIKE/ USED", "cluster": "General Dissatisfaction"},
+#         {"comment": "GOT WRONG COLOR", "cluster": "General Dissatisfaction"},
+#         {"comment": "CABLE BROKE ON FRONT", "cluster": "Mechanical Failures"},
+#         {"comment": "BREAKS ACTING WEIRD", "cluster": "Brake & Tire Issues"},
+#         {"comment": "DOESNT WORK", "cluster": "Battery & Charging Issues"},
+#         {"comment": "USED –TOO POWERFUL", "cluster": "Performance Complaints"},
+#         {"comment": "BATTERY ISSUE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "ECOM– WANTED A DIFERENT ONE", "cluster": "General Dissatisfaction"},
+#         {"comment": "NEVER PROPERLY WORKED.", "cluster": "Battery & Charging Issues"},
+#         {"comment": "TOO JERKY", "cluster": "Performance Complaints"},
+#         {"comment": "CLICKING AND GEARS SLIPPING", "cluster": "Mechanical Failures"},
+#         {"comment": "ECOM", "cluster": "General Dissatisfaction"},
+#         {"comment": "ECOM", "cluster": "General Dissatisfaction"},
+#         {"comment": "MECHANISM WON'T UNBOLT FOR LIGHT", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "ECOMM ARRIVED LATE", "cluster": "General Dissatisfaction"},
+#         {"comment": "THE BRAKE BROKE", "cluster": "Brake & Tire Issues"},
+#         {"comment": "SOMETIMES WORKS/ ERRRO", "cluster": "Battery & Charging Issues"},
+#         {"comment": "NOT FAST ENOUGH", "cluster": "Performance Complaints"},
+#         {"comment": "DIDNTWNAT", "cluster": "General Dissatisfaction"},
+#         {"comment": "ONLINE...NEW", "cluster": "General Dissatisfaction"},
+#         {"comment": "KEEPS STOPPING ON THEM", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "TOO HEAVYY FOR PERSON", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "DOES NOTWORK FOR MEMBER", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIDNT WANT", "cluster": "General Dissatisfaction"},
+#         {"comment": "NEVER WORKED", "cluster": "Battery & Charging Issues"},
+#         {"comment": "DIDNLTIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "STOPPED WORKING", "cluster": "Battery & Charging Issues"},
+#         {"comment": "MAKING NOISES", "cluster": "Performance Complaints"},
+#         {"comment": "MULTIPLE MALFUNCTIONS", "cluster": "Mechanical Failures"},
+#         {"comment": "DOESNT CHARGE OR START UP", "cluster": "Battery & Charging Issues"},
+#         {"comment": "NEITHER OF THEM CHARGE OR START UP", "cluster": "Battery & Charging Issues"},
+#         {"comment": "SQUEAKING BREAKS", "cluster": "Brake & Tire Issues"},
+#         {"comment": "BREAKS SQUEAKS AND BAD GEARS", "cluster": "Brake & Tire Issues"},
+#         {"comment": "NOT WORKING", "cluster": "General Dissatisfaction"},
+#         {"comment": "IT WON'T START EVEN FULL CHARGED", "cluster": "Battery & Charging Issues"},
+#         {"comment": "DOESNT CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "STOPPED WORKING", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIDNT WANT – OK PER AMANDA", "cluster": "General Dissatisfaction"},
+#         {"comment": "USED", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "BROKEN", "cluster": "Mechanical Failures"},
+#         {"comment": "DNW", "cluster": "General Dissatisfaction"},
+#         {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "DIDNT LIKE BIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "SEAT BROKE WEAK LITTLE PIECES KEEPBREAK", "cluster": "Mechanical Failures"},
+#         {"comment": "USED", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "RETURN BC FELL OFF BIKE", "cluster": "Mechanical Failures"},
+#         {"comment": "FRONT TIRE FLAT F & B LIGHTS DON'T WORK", "cluster": "Brake & Tire Issues"},
+#         {"comment": "NOT GOOD FOR HOLDING SURFBOARD", "cluster": "General Dissatisfaction"},
+#         {"comment": "ELECTRONIC ISSUES", "cluster": "Battery & Charging Issues"},
+#         {"comment": "CHANGED MIND", "cluster": "General Dissatisfaction"},
+#         {"comment": "BOLT FELL OFF WHILE RIDING", "cluster": "Mechanical Failures"},
+#         {"comment": "CHAINS NOT WORKING", "cluster": "Mechanical Failures"},
+#         {"comment": "BROKEN", "cluster": "Mechanical Failures"},
+#         {"comment": "DAMAGED TIRE", "cluster": "Brake & Tire Issues"},
+#         {"comment": "UDW–WILL NOT TAKE ITS CHARGE", "cluster": "Battery & Charging Issues"},
+#         {"comment": "WIFE SAID NO", "cluster": "General Dissatisfaction"},
+#         {"comment": "DIDNT LIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "TIRE KEEPS BREAKING", "cluster": "Brake & Tire Issues"},
+#         {"comment": "DONT WANT RTND OTHER BIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "FRONT TIRE JERKS", "cluster": "Brake & Tire Issues"},
+#         {"comment": "WANTS A DIFFERENT BIKE", "cluster": "General Dissatisfaction"},
+#         {"comment": "TOO HEAVY FOR MEMBER", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "TIRES WENT FLAT ON FIRST USE", "cluster": "Brake & Tire Issues"},
+#         {"comment": "DIDTN WANT", "cluster": "General Dissatisfaction"},
+#         {"comment": "DOESNT HAVE CHAIN GUARD", "cluster": "Mechanical Failures"},
+#         {"comment": "HAS A BREAK INWIRE", "cluster": "Electrical / Assembly Problems"},
+#         {"comment": "KICK STAND BROKE OFF", "cluster": "Mechanical Failures"},
+#         {"comment": "BACK RIM DAMAGED WHEN SHIPPED", "cluster": "Mechanical Failures"},
+#         {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "TOO HEAVY", "cluster": "Too Heavy / Too Big"},
+#         {"comment": "DOES NOT WORK", "cluster": "General Dissatisfaction"},
+#         {"comment": "NOT SHIFTING CORRECTLY", "cluster": "Mechanical Failures"}
+#     ]
+#
+#     # Create DataFrame
+#     df = pd.DataFrame(clustered_comments)
+#
+#     # Basic cleaning (optional)
+#     df['comment'] = df['comment'].astype(str).str.strip()
+#     df['cluster'] = df['cluster'].astype('category')
+#
+#     # Aggregate counts
+#     counts = df['cluster'].value_counts().reset_index()
+#     counts.columns = ['cluster', 'count']
+#
+#     # Plot settings
+#     sns.set(style="whitegrid")
+#     palette = sns.color_palette("tab10", n_colors=len(counts))
+#
+#     # Horizontal bar chart (ranked)
+#     plt.figure(figsize=(10, 6))
+#     sns.barplot(
+#         data=counts.sort_values('count', ascending=True),
+#         x='count', y='cluster',
+#         palette=palette
+#     )
+#     plt.title("Return Comments by Cluster")
+#     plt.xlabel("Number of Comments")
+#     plt.ylabel("")
+#     for i, (count, cluster) in enumerate(zip(counts.sort_values('count', ascending=True)['count'],
+#                                              counts.sort_values('count', ascending=True)['cluster'])):
+#         plt.text(count + 0.5, i, str(count), va='center')
+#     plt.tight_layout()
+#     plt.show()
+#
+#     # Pie chart (percentage)
+#     plt.figure(figsize=(7, 7))
+#     plt.pie(
+#         counts['count'],
+#         labels=counts['cluster'],
+#         autopct='%1.1f%%',
+#         startangle=140,
+#         colors=palette
+#     )
+#     plt.title("Return Comments Distribution")
+#     plt.tight_layout()
+#     plt.show()
+#
+#     # Optional: Save DF for later use
+#     # df.to_csv("clustered_comments.csv", index=False)
+#
+#
+#
+# # clustered_comments()

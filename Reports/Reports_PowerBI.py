@@ -1,6 +1,18 @@
 from Reports.Reports_Clean import Unleashed_PowerBI_SalesOrder_data, Unleashed_PowerBI_Inventory_data
 from Reports.Reports_Helper import get_date_info
-from Reports.Reports_Clean import Quickbooks_PowerBI_PandL_data, Unleashed_PowerBI_PurchaseOrders_data, Unleashed_PowerBI_WOH_report, Unleashed_PowerBI_Costco_Returns
+from Reports.Reports_Clean import Quickbooks_PowerBI_PandL_data, Unleashed_PowerBI_PurchaseOrders_data, Unleashed_PowerBI_WOH_report, Unleashed_PowerBI_Costco_Returns, Unleashed_PowerBI_Invoices_data
+
+
+
+def PowerBI_Invoices_data(reload):
+    today_str, ttm_start_str = get_date_info()
+
+    start_date = '2025-01-01'
+    print("Today:", today_str)
+    print("Start Date:", start_date)
+
+    df_Invoices = Unleashed_PowerBI_Invoices_data(start_date=start_date, end_date=today_str, reload=reload, save_excel=False)
+    return df_Invoices
 
 
 def PowerBI_KPIs_data(reload):
@@ -30,6 +42,8 @@ def PowerBI_Costco_Returns(reload):
 
 #get TTM sales data for PowerBI
 reload = True
+df_Invoices = PowerBI_Invoices_data(reload)
+
 # df_SalesOrders = PowerBI_KPIs_data(reload=reload)
 # df_WOH = PowerBI_Inventory_data(reload=reload)
-df_costco_returns_stock_adjustment, df_costco_returns_credit_notes = PowerBI_Costco_Returns(reload=reload)
+# df_costco_returns_stock_adjustment, df_costco_returns_credit_notes = PowerBI_Costco_Returns(reload=reload)

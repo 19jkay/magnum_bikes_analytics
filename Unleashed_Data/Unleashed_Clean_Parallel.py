@@ -136,6 +136,74 @@ pd.set_option('display.max_colwidth', None)
 #     return df
 
 
+def Unleashed_Invoices_clean_data_parallel(start_date, end_date, reload=True, save_excel=False):
+    if reload:
+        df_invoices = get_data_parallel(unleashed_data_name="Invoices", start_date=start_date, end_date=end_date)
+        df_products = get_data_parallel(unleashed_data_name="Products")
+        df_customers = get_data_parallel(unleashed_data_name="Customers")
+
+        df_products = df_products[['ProductCode', 'ProductGroup', 'AverageLandPrice']]
+
+        # df_customers = df_customers[['CustomerCode', 'CustomerType']]
+        df_customers = df_customers.loc[df_customers['AddressType'] == 'Postal']
+        df_customers = df_customers.drop_duplicates(subset='CustomerCode', keep='first')
+        df_customers = df_customers[['CustomerCode', 'CustomerType', 'City', 'Region', 'Country', 'PostalCode']]
+        print(
+            "Changed customers merging with sales orders in Unleashed_SalesOrders_clean_data_parallel in Unleashed_Clean_parallel")
+
+        # df_salesorders = df_salesorders.loc[df_salesorders['OrderStatus'] == 'Completed']  # get completed invoices
+
+        df_invoices.rename(columns={'Product.ProductCode': 'ProductCode',
+                                       'Product.ProductDescription': 'ProductDescription'}, inplace=True)
+
+        df_salesorders = df_invoices[
+            ['InvoiceNumber', 'CustomerCode', 'CustomerName', 'InvoiceDate', 'ProductCode', 'ProductDescription', 'OrderQuantity',
+             'LineTotal']]
+
+        df = df_salesorders.merge(
+            df_products[['ProductCode', 'ProductGroup', 'AverageLandPrice']],
+            on='ProductCode',
+            how='left'
+        )
+
+        df = df.merge(
+            df_customers[['CustomerCode', 'CustomerType', 'City', 'Region', 'Country', 'PostalCode']],
+            on='CustomerCode',
+            how='left'
+        )
+
+        df['Cost'] = df['AverageLandPrice'] * df['OrderQuantity']
+        df = df.drop('AverageLandPrice', axis=1)
+
+        # print(f"Clean len before: {len(df)}")
+        # print("Clean Sum of sales before: ", df['LineTotal'].sum())
+
+        df = df.loc[~df['InvoiceDate'].isna()]  # remove nan dates
+        df['LineTotal'] = df['LineTotal'].astype(float)  # convert 'Sub Total' column to float datatype
+        # df_invoices['OrderQuantity'] = df_invoices['OrderQuantity'].str.replace(',', '').astype(float)
+        df['OrderQuantity'] = df['OrderQuantity'].astype(float)
+        df['ProductGroup'] = df['ProductGroup'].replace('', 'No Product Group')
+        df['ProductGroup'] = df['ProductGroup'].fillna('No Product Group')
+
+        df['CustomerType'] = df['CustomerType'].replace('', 'No Customer Type')
+        df['CustomerType'] = df['CustomerType'].fillna('No Customer Type')
+
+        # df = df_invoices
+
+        if save_excel:
+            file_path = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_invoices_data.xlsx"
+            folder_path = os.path.dirname(file_path)
+            os.makedirs(folder_path, exist_ok=True)
+            df.to_excel(file_path, index=False)
+            print(f"Excel file written to: {file_path}")
+
+    else:
+        INVOICES_FILENAME = r"C:\Users\joshu\Documents\Unleashed_API\unleashed_invoices_data.xlsx"
+        df = pd.read_excel(INVOICES_FILENAME)
+
+    return df
+
+
 def Unleashed_SalesOrders_clean_data_parallel(start_date, end_date, reload=True, save_excel=False):
     # This code basically gets a Sales Enquiry from Unleashed with Transaction Date = Completed Date and everything else default
 

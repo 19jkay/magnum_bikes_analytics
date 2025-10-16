@@ -286,6 +286,7 @@ def clean_purchase_orders(df):
     final_df['DeliveryDate'] = final_df['DeliveryDate'].apply(convert_ms_date).dt.date.astype(str)
     # final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
     final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date)
+    final_df['ReceivedDate'] = final_df['ReceivedDate'].apply(convert_ms_date)
 
     return final_df
 
@@ -425,12 +426,12 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
             all_items.extend(items)
 
     df = pd.DataFrame(all_items)
-
-    file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_{unleashed_data_name}_data.xlsx"
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    df.to_excel(file_path, index=False)
-    print(f"Excel file written to: {file_path}")
-    print("DID IT")
+    #
+    # file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_{unleashed_data_name}_data.xlsx"
+    # os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    # df.to_excel(file_path, index=False)
+    # print(f"Excel file written to: {file_path}")
+    # print("DID IT")
 
     # Apply appropriate cleaning
     if unleashed_data_name == 'Products':
@@ -467,3 +468,4 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
 # start_date = '2025-01-04'
 # end_date = '2025-08-04'
 # df_invoices = get_data_parallel(unleashed_data_name="SalesOrders", start_date=start_date, end_date=end_date)
+# df_warehouses = get_data_parallel(unleashed_data_name="Warehouses")
