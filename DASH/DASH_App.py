@@ -511,7 +511,9 @@ def dash_app(data, product_name, path):
         if all(metric in df.columns for metric in metrics):
             df = update_data(df, inventory_name)
 
-        save_dataframe(df, product_name, path)
+        save_dataframe(df, product_name, path, filename_suffix="consensus_data")
+
+        save_dataframe(bottom_table_df, product_name, path, filename_suffix='additional_data')
 
         fig = go.Figure()
         for col in selected_metrics:

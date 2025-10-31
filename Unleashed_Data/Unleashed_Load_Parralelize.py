@@ -42,19 +42,11 @@ def unleashed_api_get_request(url_base, page_number, url_param):
 
 
 
-
-
-
-
-
-
 def get_products_helper(unleashed_data_name, url_param="", page_number=1):
     url_base = unleashed_data_name + "/Page"
     return unleashed_api_get_request(url_base, page_number, url_param)
 
-# def get_customers_helper(unleashed_data_name, url_param="", page_number=1):
-#     url_base = unleashed_data_name + "/Page"
-#     return unleashed_api_get_request(url_base, page_number, url_param)
+
 
 def get_invoices_helper(unleashed_data_name, start_date, end_date, url_param="", page_number=1):
     url_param = f"startDate={start_date}&endDate={end_date}"
@@ -64,13 +56,6 @@ def get_invoices_helper(unleashed_data_name, start_date, end_date, url_param="",
 
     return unleashed_json
 
-# def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param="", page_number=1):
-#     url_param = f"asAtDate={end_date}"
-#
-#     url_base = unleashed_data_name + "/Page"
-#     unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
-#
-#     return unleashed_json
 
 
 def get_stock_on_hand_helper_old(unleashed_data_name, end_date, url_param=None, page_number=1):
@@ -95,11 +80,6 @@ def get_stock_on_hand_helper(unleashed_data_name, end_date, url_param=None, page
     url_params = [f"asAtDate={end_date}"]
     if url_param:
         url_params.extend(url_param)
-
-    # if warehouse_name:
-    #     url_params.append(f"warehouseName={warehouse_name}")
-    # if product_id:
-    #     url_params.append(f"productCode={product_id}")  # or productId depending on API spec
 
     # Join parameters into a single query string
     query_string = "?" + "&".join(url_params)
@@ -170,6 +150,8 @@ def get_credit_notes_data(unleashed_data_name, start_date, end_date, url_param="
 
 
 
+
+
 def clean_products_data(df):
     customer_df = df['ProductGroup'].apply(pd.Series)
     df_expanded = pd.concat([df.drop(columns=['ProductGroup']), customer_df], axis=1)
@@ -221,8 +203,6 @@ def clean_stock_on_hand(df):
     return df
 
 def clean_sales_orders(df):
-    # print(f"Load len before: {len(df)}")
-    # print("Load Sum of sales before: ", df['SubTotal'].sum())
 
     customer_df = df['Customer'].apply(pd.Series)
     df_expanded = pd.concat([df.drop(columns=['Customer']), customer_df], axis=1)
@@ -239,8 +219,6 @@ def clean_sales_orders(df):
     final_df = pd.concat([base_df.loc[lines_df['index']].reset_index(drop=True), invoice_lines_expanded], axis=1)
     final_df = final_df.rename(columns={'LastModifiedOn': 'SalesOrderLines_LastModifiedOn'})
 
-    # print(f"Load len after: {len(final_df)}")
-    # print("Load Sum of sales after: ", final_df['LineTotal'].sum())
 
     # convert weird date format to regular date
     final_df['OrderDate'] = final_df['OrderDate'].apply(convert_ms_date).dt.date.astype(str)
@@ -426,12 +404,6 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
             all_items.extend(items)
 
     df = pd.DataFrame(all_items)
-    #
-    # file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_{unleashed_data_name}_data.xlsx"
-    # os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    # df.to_excel(file_path, index=False)
-    # print(f"Excel file written to: {file_path}")
-    # print("DID IT")
 
     # Apply appropriate cleaning
     if unleashed_data_name == 'Products':

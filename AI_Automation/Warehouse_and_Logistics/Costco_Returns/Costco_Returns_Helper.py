@@ -87,7 +87,8 @@ def create_stock_adjustment(product_code, serial_number, warehouse_code, quantit
                     }
                 ],
                 "NewQuantity": quantity,
-                "NewActualValue": 0,
+                # "NewActualValue": 0,
+                "NewActualValue": 629.905, #Shawn Ask
                 "Comments": comment
             }
         ]

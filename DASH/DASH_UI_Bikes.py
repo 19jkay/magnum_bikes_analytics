@@ -73,6 +73,32 @@ if __name__ == "__main__":
 
         return df
 
+    # def reload_df_for_dash(product_name, path):
+    #     # path_segment = r'Products\Product_SKUs'
+    #     # df = reload_df_for_dash(product_name=product_name, path_segment=path_segment)
+    #
+    #     filename_suffix = "consensus_data"
+    #     other_filename_suffix = 'additional_data'
+    #     extension = "xlsx"
+    #
+    #     # Build dynamic output path
+    #     output_dir = os.path.join(r"C:\Users\joshu\Documents\DASH", path)
+    #
+    #     # Clean filename components
+    #     safe_product_name = product_name.replace("/", "_").replace(":", "_")
+    #     filename = f"{safe_product_name}_{filename_suffix}.{extension}"
+    #
+    #     other_filename = f"{safe_product_name}_{filename_suffix}.{extension}"
+    #
+    #     # Full save path
+    #     full_path = os.path.join(output_dir, filename)
+    #     other_full_path = os.path.join(output_dir, other_filename)
+    #
+    #     df = pd.read_excel(full_path)
+    #     df_other = pd.read_excel(other_full_path)
+    #
+    #     return df, df_other
+
 
     def get_all_data(reload_data, save_excel):
         # get date info
@@ -198,6 +224,7 @@ if __name__ == "__main__":
                                       'Edge - Graphite - 48V 15A', 'Edge - Ruby - 48V 15A', 'Edge - Stealth Camo - 48V 15A']:
                     print("Hit NPI")
                     analytical_forecast = int(input("Enter analytical forecast for IBD bike: "))
+                    print("Entered analytical forecast: ", analytical_forecast)
                     product_series = df_bikes_descriptions.loc[df_bikes_descriptions['ProductDescription'] == product_name].reset_index(drop=True)
                     dash_ibd_bike_launch(series=product_series, analytical_forecast=analytical_forecast, financial_forecast=poll_forecast,
                                      product_name=product_name,

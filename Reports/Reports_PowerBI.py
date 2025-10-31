@@ -1,7 +1,7 @@
 from Reports.Reports_Clean import Unleashed_PowerBI_SalesOrder_data, Unleashed_PowerBI_Inventory_data
 from Reports.Reports_Helper import get_date_info
 from Reports.Reports_Clean import Quickbooks_PowerBI_PandL_data, Unleashed_PowerBI_PurchaseOrders_data, Unleashed_PowerBI_WOH_report, Unleashed_PowerBI_Costco_Returns, Unleashed_PowerBI_Invoices_data
-
+import os
 
 
 def PowerBI_Invoices_data(reload):
@@ -43,6 +43,11 @@ def PowerBI_Costco_Returns(reload):
 #get TTM sales data for PowerBI
 reload = True
 df_Invoices = PowerBI_Invoices_data(reload)
+
+file_path = fr"C:\Users\joshu\Documents\Shopify_API\Unleashed_Invoices_data.xlsx"
+os.makedirs(os.path.dirname(file_path), exist_ok=True)
+df_Invoices.to_excel(file_path, index=False)
+print(f"Excel file written to: {file_path}")
 
 # df_SalesOrders = PowerBI_KPIs_data(reload=reload)
 # df_WOH = PowerBI_Inventory_data(reload=reload)
