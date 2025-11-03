@@ -12,7 +12,6 @@ def configure():
     load_dotenv()
 
 admin_api_access_token = os.getenv("shopify_stores_Magnum_Bikes_Analytics_admin_api_access_token")
-print(admin_api_access_token)
 
 store_url = "https://r-r-store-locations.myshopify.com"
 
@@ -93,8 +92,6 @@ def get_shopify_magnum_store_orders_data(start_date, end_date):
 
     # Normalize into a DataFrame
     df_orders = pd.json_normalize(all_orders, sep="_")
-
-    print(df_orders)
 
     df_orders['current_subtotal_price'] = pd.to_numeric(df_orders['current_subtotal_price'], errors='coerce').fillna(0)
     # print("Raw full sum: ", df_orders['current_subtotal_price'].sum())
@@ -261,10 +258,10 @@ def get_shopify_stores_CPOs(start_date, end_date):
 
     orders_kept_cols = ['id', 'created_at', 'location_id', 'line_name', 'title', 'current_quantity', 'Final Price']
     df_in_depth = df_orders_clean[orders_kept_cols].copy()
-    file_path = fr"C:\Users\joshu\Documents\Shopify_API\shopify_store_orders_full.xlsx"
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    df_in_depth.to_excel(file_path, index=False)
-    print(f"Excel file written to: {file_path}")
+    # file_path = fr"C:\Users\joshu\Documents\Shopify_API\shopify_store_orders_full.xlsx"
+    # os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    # df_in_depth.to_excel(file_path, index=False)
+    # print(f"Excel file written to: {file_path}")
 
     #Refurbished - Low Rider 2.0, Low Rider 2.0
     # #Copper, Graphite

@@ -283,7 +283,7 @@ def Unleashed_Invoices_clean_data_parallel(start_date, end_date, df_products, df
 
     df_invoices = get_data_parallel(unleashed_data_name="Invoices", start_date=start_date, end_date=end_date)
 
-    print(df_invoices.columns)
+
 
     # df_products = df_products[['ProductCode', 'ProductGroup', 'AverageLandPrice']]
     #
@@ -400,99 +400,96 @@ def Unleashed_credit_note_clean_data_parallel(start_date, end_date, df_products,
 
     return df
 
-start_date = '2025-01-01'
-end_date = '2025-10-31'
+def get_unleashed_CPOs(start_date, end_date):
 
-#get and clean product, customer data
-df_products = get_data_parallel(unleashed_data_name="Products")
-df_customers = get_data_parallel(unleashed_data_name="Customers")
-df_products = df_products[['ProductCode', 'ProductGroup', 'AverageLandPrice']]
-df_customers = df_customers.loc[df_customers['AddressType'] == 'Postal']
-df_customers = df_customers.drop_duplicates(subset='CustomerCode', keep='first')
-df_customers = df_customers[['CustomerCode', 'CustomerType', 'City', 'Region', 'Country', 'PostalCode']]
+# start_date = '2025-01-01'
+# end_date = '2025-10-31'
 
-df_invoices = Unleashed_Invoices_clean_data_parallel(start_date, end_date, df_products, df_customers)
-df_credits = Unleashed_credit_note_clean_data_parallel(start_date, end_date, df_products, df_customers)
+    #get and clean product, customer data
+    df_products = get_data_parallel(unleashed_data_name="Products")
+    df_customers = get_data_parallel(unleashed_data_name="Customers")
+    df_products = df_products[['ProductCode', 'ProductGroup', 'AverageLandPrice']]
+    df_customers = df_customers.loc[df_customers['AddressType'] == 'Postal']
+    df_customers = df_customers.drop_duplicates(subset='CustomerCode', keep='first')
+    df_customers = df_customers[['CustomerCode', 'CustomerType', 'City', 'Region', 'Country', 'PostalCode']]
 
-df = pd.concat([df_invoices, df_credits], axis=0)
+    df_invoices = Unleashed_Invoices_clean_data_parallel(start_date, end_date, df_products, df_customers)
+    df_credits = Unleashed_credit_note_clean_data_parallel(start_date, end_date, df_products, df_customers)
 
-# convert dates to proper format
-df["Date"] = pd.to_datetime(df["Date"], errors="coerce", utc=True)
-df["Date Year"] = df["Date"].dt.year
-df["Date Month"] = df["Date"].dt.month_name()
-df["Date MonthNum"] = df["Date"].dt.month
-df["Date Quarter"] = df["Date"].dt.quarter
-df["Date Quarter"] = "Q" + df["Date"].dt.quarter.astype(str)
-df["Date"] = df["Date"].dt.tz_localize(None)
+    df = pd.concat([df_invoices, df_credits], axis=0)
 
-print("Invoices sum Line Total: ", df_invoices['LineTotal'].sum())
-print("Credits sum Line Total: ", df_credits['LineTotal'].sum())
-print("Credit quantity sum: ", df_credits['OrderQuantity'].sum())
+    # convert dates to proper format
+    df["Date"] = pd.to_datetime(df["Date"], errors="coerce", utc=True)
+    df["Date Year"] = df["Date"].dt.year
+    df["Date Month"] = df["Date"].dt.month_name()
+    df["Date MonthNum"] = df["Date"].dt.month
+    df["Date Quarter"] = df["Date"].dt.quarter
+    df["Date Quarter"] = "Q" + df["Date"].dt.quarter.astype(str)
+    df["Date"] = df["Date"].dt.tz_localize(None)
 
-#THIS WORKED AND GOT INVOICES WITHIN Big O($100) of unleashed
-df_thing = df_invoices.loc[(~df_invoices['ProductCode'].isin(['Freight', 'Shipping'])) & (~df_invoices['ProductCode'].isna())]
-print("Invoice Sum without shipping and handling: ", df_thing['LineTotal'].sum())
-
-
-df_match_unleashed = df.loc[(~df['ProductCode'].isin(['Freight', 'Shipping'])) & (~df['ProductCode'].isna())]
-print("Everything Sum without shipping and handling: ", df_match_unleashed['LineTotal'].sum())
-
-
-
-
-
+    # print("Invoices sum Line Total: ", df_invoices['LineTotal'].sum())
+    # print("Credits sum Line Total: ", df_credits['LineTotal'].sum())
+    # print("Credit quantity sum: ", df_credits['OrderQuantity'].sum())
+    #
+    # #THIS WORKED AND GOT INVOICES WITHIN Big O($100) of unleashed
+    # df_thing = df_invoices.loc[(~df_invoices['ProductCode'].isin(['Freight', 'Shipping'])) & (~df_invoices['ProductCode'].isna())]
+    # print("Invoice Sum without shipping and handling: ", df_thing['LineTotal'].sum())
+    #
+    #
+    df_match_unleashed = df.loc[(~df['ProductCode'].isin(['Freight', 'Shipping'])) & (~df['ProductCode'].isna())]
+    # print("Everything Sum without shipping and handling: ", df_match_unleashed['LineTotal'].sum())
+    #
 
 
+    lowrider_graphite_product_code = 'Low Rider BLK-GPH'
+    lowrider_graphite_product_description = 'CPO Low rider 2.0 - Black-Graphite - 48v 15Ah'
+    lowrider_copper_product_code = 'Low Rider - BLK-CPR'
+    lowrider_copper_product_description = 'Low rider 2.0 - Black-Copper - 48v 15Ah'
+
+    cosmo_black_product_code = 'CPO23150052'
+    cosmo_black_product_description = 'CPO - Cosmo 2.0 T - Black- 48v 15 Ah'
+    cosmo_calypso_product_code = 'CPO23150051'
+    cosmo_calypso_product_description = 'CPO - Cosmo 2.0 T - Calypso - 48v 15 Ah'
+
+    #Copper, Graphite
+    cruiser_graphite_product_code = 'Cruiser BLK-GPH'
+    cruiser_graphite_product_description = 'Cruiser 2.0 - Black-Gunmetal - 48v 15Ah'
+    cruiser_copper_product_code = 'Cruiser BLK-CPR'
+    cruiser_copper_product_description = 'Cruiser 2.0 - Black-Copper - 48v 15Ah'
+
+    product_codes = [
+        lowrider_graphite_product_code,
+        lowrider_copper_product_code,
+        cosmo_black_product_code,
+        cosmo_calypso_product_code,
+        cruiser_graphite_product_code,
+        cruiser_copper_product_code
+    ]
+
+    # List of product description variables
+    product_descriptions = [
+        lowrider_graphite_product_description,
+        lowrider_copper_product_description,
+        cosmo_black_product_description,
+        cosmo_calypso_product_description,
+        cruiser_graphite_product_description,
+        cruiser_copper_product_description
+    ]
 
 
+    df_cpos = df_match_unleashed.loc[df_match_unleashed['ProductCode'].isin(product_codes)]
 
 
-lowrider_graphite_product_code = 'Low Rider BLK-GPH'
-lowrider_graphite_product_description = 'CPO Low rider 2.0 - Black-Graphite - 48v 15Ah'
-lowrider_copper_product_code = 'Low Rider - BLK-CPR'
-lowrider_copper_product_description = 'Low rider 2.0 - Black-Copper - 48v 15Ah'
+    low_rider_product_codes = ['Low Rider BLK-GPH', 'Low Rider - BLK-CPR']
+    df_cpos.loc[df_cpos['ProductCode'].isin(low_rider_product_codes), 'Bike Type'] = 'Low Rider 2.0 CPO'
 
-cosmo_black_product_code = 'CPO23150052'
-cosmo_black_product_description = 'CPO - Cosmo 2.0 T - Black- 48v 15 Ah'
-cosmo_calypso_product_code = 'CPO23150051'
-cosmo_calypso_product_description = 'CPO - Cosmo 2.0 T - Calypso - 48v 15 Ah'
+    cosmo_product_codes = ['CPO23150052', 'CPO23150051']
+    df_cpos.loc[df_cpos['ProductCode'].isin(cosmo_product_codes), 'Bike Type'] = 'Cosmo 2.0 T CPO'
 
-#Copper, Graphite
-cruiser_graphite_product_code = 'Cruiser BLK-GPH'
-cruiser_graphite_product_description = 'Cruiser 2.0 - Black-Gunmetal - 48v 15Ah'
-cruiser_copper_product_code = 'Cruiser BLK-CPR'
-cruiser_copper_product_description = 'Cruiser 2.0 - Black-Copper - 48v 15Ah'
+    cruiser_product_codes = ['Cruiser BLK-GPH', 'Cruiser BLK-CPR']
+    df_cpos.loc[df_cpos['ProductCode'].isin(cruiser_product_codes), 'Bike Type'] = 'Cruiser 2.0 CPO'
 
-product_codes = [
-    lowrider_graphite_product_code,
-    lowrider_copper_product_code,
-    cosmo_black_product_code,
-    cosmo_calypso_product_code,
-    cruiser_graphite_product_code,
-    cruiser_copper_product_code
-]
-
-# List of product description variables
-product_descriptions = [
-    lowrider_graphite_product_description,
-    lowrider_copper_product_description,
-    cosmo_black_product_description,
-    cosmo_calypso_product_description,
-    cruiser_graphite_product_description,
-    cruiser_copper_product_description
-]
-
-
-
-
-
-
-
-
-
-
-
-df_cpos = df_match_unleashed.loc[df_match_unleashed['ProductCode'].isin(product_codes)]
+    return df_cpos
 
 # df_orders_clean.loc[
 #         mask_cosmo & df_orders_clean['line_name'].str.contains("black", case=False, na=False),
@@ -504,8 +501,8 @@ df_cpos = df_match_unleashed.loc[df_match_unleashed['ProductCode'].isin(product_
 #     ] = 'CPO - Cosmo 2.0 T - Black- 48v 15 Ah'
 
 
-file_path = fr"C:\Users\joshu\Documents\Shopify_API\Unleashed_CPO_Invoices.xlsx"
-os.makedirs(os.path.dirname(file_path), exist_ok=True)
-df_cpos.to_excel(file_path, index=False)
-print(f"Excel file written to: {file_path}")
-print("DID IT")
+# file_path = fr"C:\Users\joshu\Documents\Shopify_API\Unleashed_CPO_Invoices.xlsx"
+# os.makedirs(os.path.dirname(file_path), exist_ok=True)
+# df_cpos.to_excel(file_path, index=False)
+# print(f"Excel file written to: {file_path}")
+# print("DID IT")
