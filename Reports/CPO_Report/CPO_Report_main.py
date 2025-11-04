@@ -38,6 +38,7 @@ df_unleashed_cpos_after = df_unleashed_cpos[df_unleashed_cpos['Date'] > '12/31/2
 
 #costco returns lowriders cruisers I think
 df_unleashed_costco = df_unleashed_cpos.loc[df_unleashed_cpos['CustomerType'] == 'Costco'].copy()
+df_unleashed_costco_sold_in = df_unleashed_costco.loc[df_unleashed_costco['OrderQuantity'] >= 0].copy()
 df_unleashed_costco = df_unleashed_costco.loc[df_unleashed_costco['OrderQuantity'] < 0]
 #get stock adjustment returns
 df_stock_adjustment_returns = Unleashed_PowerBI_Costco_Returns(start_date_unleashed, end_date_unleashed)
@@ -125,6 +126,9 @@ df_all_returns_costco["Date"] = df_all_returns_costco["Date"].dt.tz_localize(Non
 df_all_returns_costco.drop(columns=['Location', 'Customer Type', 'created_at'], inplace=True)
 df_all_returns_costco['Positive Return Quantity'] = -df_all_returns_costco['quantity']
 
+print("sum1: ", df_all_returns_costco['quantity'].sum())
+print("sum2: ", df_all_returns_costco['Positive Return Quantity'].sum())
+
 
 # file_path = fr"C:\Users\joshu\Documents\Shopify_API\shopify_orders_CPOs.xlsx"
 # os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -144,4 +148,9 @@ print(f"Excel file written to: {file_path}")
 file_path = fr"C:\Users\joshu\Documents\Shopify_API\costco_CPO_returns.xlsx"
 os.makedirs(os.path.dirname(file_path), exist_ok=True)
 df_all_returns_costco.to_excel(file_path, index=False)
+print(f"Excel file written to: {file_path}")
+
+file_path = fr"C:\Users\joshu\Documents\Shopify_API\costco_sold_in.xlsx"
+os.makedirs(os.path.dirname(file_path), exist_ok=True)
+df_unleashed_costco_sold_in.to_excel(file_path, index=False)
 print(f"Excel file written to: {file_path}")

@@ -150,6 +150,7 @@ df_orders_wide.rename(columns={'ProductCode': 'Product Code'}, inplace=True)
 
 #Merge
 df_inventory_purchases = df_report.merge(df_orders_wide, how='left', on='Product Code')
+df_inventory_purchases["On Order?"] = ~df_inventory_purchases["OrderNumber_1"].isna()
 
 
 file_path = fr"C:\Users\joshu\Documents\Reporting\Unleashed_Reports\Inventory_Report_with_PurchaseOrders.xlsx"
