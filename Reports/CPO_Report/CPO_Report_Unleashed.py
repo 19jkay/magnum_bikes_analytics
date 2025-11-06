@@ -400,7 +400,7 @@ def Unleashed_credit_note_clean_data_parallel(start_date, end_date, df_products,
 
     return df
 
-def get_unleashed_CPOs(start_date, end_date):
+def get_unleashed_costco_CPOs_and_sell_in(start_date, end_date):
 
 # start_date = '2025-01-01'
 # end_date = '2025-10-31'
@@ -441,44 +441,44 @@ def get_unleashed_CPOs(start_date, end_date):
     #
 
 
-    lowrider_graphite_product_code = 'Low Rider BLK-GPH'
-    lowrider_graphite_product_description = 'CPO Low rider 2.0 - Black-Graphite - 48v 15Ah'
-    lowrider_copper_product_code = 'Low Rider - BLK-CPR'
-    lowrider_copper_product_description = 'Low rider 2.0 - Black-Copper - 48v 15Ah'
+    #GET CPO PRODUCT
+    cpo_lowrider_graphite_product_code = 'Low Rider BLK-GPH'
+    cpo_lowrider_graphite_product_description = 'CPO Low rider 2.0 - Black-Graphite - 48v 15Ah'
+    cpo_lowrider_copper_product_code = 'Low Rider - BLK-CPR'
+    cpo_lowrider_copper_product_description = 'Low rider 2.0 - Black-Copper - 48v 15Ah'
 
-    cosmo_black_product_code = 'CPO23150052'
-    cosmo_black_product_description = 'CPO - Cosmo 2.0 T - Black- 48v 15 Ah'
-    cosmo_calypso_product_code = 'CPO23150051'
-    cosmo_calypso_product_description = 'CPO - Cosmo 2.0 T - Calypso - 48v 15 Ah'
+    cpo_cosmo_black_product_code = 'CPO23150052'
+    cpo_cosmo_black_product_description = 'CPO - Cosmo 2.0 T - Black- 48v 15 Ah'
+    cpo_cosmo_calypso_product_code = 'CPO23150051'
+    cpo_cosmo_calypso_product_description = 'CPO - Cosmo 2.0 T - Calypso - 48v 15 Ah'
 
     #Copper, Graphite
-    cruiser_graphite_product_code = 'Cruiser BLK-GPH'
-    cruiser_graphite_product_description = 'Cruiser 2.0 - Black-Gunmetal - 48v 15Ah'
-    cruiser_copper_product_code = 'Cruiser BLK-CPR'
-    cruiser_copper_product_description = 'Cruiser 2.0 - Black-Copper - 48v 15Ah'
+    cpo_cruiser_graphite_product_code = 'Cruiser BLK-GPH'
+    cpo_cruiser_graphite_product_description = 'Cruiser 2.0 - Black-Gunmetal - 48v 15Ah'
+    cpo_cruiser_copper_product_code = 'Cruiser BLK-CPR'
+    cpo_cruiser_copper_product_description = 'Cruiser 2.0 - Black-Copper - 48v 15Ah'
 
-    product_codes = [
-        lowrider_graphite_product_code,
-        lowrider_copper_product_code,
-        cosmo_black_product_code,
-        cosmo_calypso_product_code,
-        cruiser_graphite_product_code,
-        cruiser_copper_product_code
+    cpo_product_codes = [
+        cpo_lowrider_graphite_product_code,
+        cpo_lowrider_copper_product_code,
+        cpo_cosmo_black_product_code,
+        cpo_cosmo_calypso_product_code,
+        cpo_cruiser_graphite_product_code,
+        cpo_cruiser_copper_product_code
     ]
 
     # List of product description variables
-    product_descriptions = [
-        lowrider_graphite_product_description,
-        lowrider_copper_product_description,
-        cosmo_black_product_description,
-        cosmo_calypso_product_description,
-        cruiser_graphite_product_description,
-        cruiser_copper_product_description
+    cpo_product_descriptions = [
+        cpo_lowrider_graphite_product_description,
+        cpo_lowrider_copper_product_description,
+        cpo_cosmo_black_product_description,
+        cpo_cosmo_calypso_product_description,
+        cpo_cruiser_graphite_product_description,
+        cpo_cruiser_copper_product_description
     ]
 
 
-    df_cpos = df_match_unleashed.loc[df_match_unleashed['ProductCode'].isin(product_codes)]
-
+    df_cpos = df_match_unleashed.loc[df_match_unleashed['ProductCode'].isin(cpo_product_codes)]
 
     low_rider_product_codes = ['Low Rider BLK-GPH', 'Low Rider - BLK-CPR']
     df_cpos.loc[df_cpos['ProductCode'].isin(low_rider_product_codes), 'Bike Type'] = 'Low Rider 2.0 CPO'
@@ -489,7 +489,62 @@ def get_unleashed_CPOs(start_date, end_date):
     cruiser_product_codes = ['Cruiser BLK-GPH', 'Cruiser BLK-CPR']
     df_cpos.loc[df_cpos['ProductCode'].isin(cruiser_product_codes), 'Bike Type'] = 'Cruiser 2.0 CPO'
 
-    return df_cpos
+
+
+
+
+
+
+
+
+
+
+
+
+
+    #GET REGULAR COSTCO SELL IN Product codes
+    lowrider_graphite_product_code = 'Low Rider BLK-GPH'
+    lowrider_copper_product_code = 'Low Rider - BLK-CPR'
+
+    cosmo_black_product_code = '23150052'
+    cosmo_calypso_product_code = '23150051'
+
+    cruiser_graphite_product_code = 'Cruiser BLK-GPH'
+    cruiser_copper_product_code = 'Cruiser BLK-CPR'
+
+    costco_sell_in_product_codes = [
+                lowrider_graphite_product_code,
+                lowrider_copper_product_code,
+                cosmo_black_product_code,
+                cosmo_calypso_product_code,
+                cruiser_graphite_product_code,
+                cruiser_copper_product_code
+            ]
+
+    df_costco_sell_in = df_match_unleashed.loc[df_match_unleashed['ProductCode'].isin(costco_sell_in_product_codes)]
+
+    #standard costco bikes sell-in
+    low_rider_product_codes = [lowrider_graphite_product_code, lowrider_copper_product_code]
+    df_costco_sell_in.loc[df_costco_sell_in['ProductCode'].isin(low_rider_product_codes), 'Bike Type'] = 'Low Rider 2.0 CPO'
+
+    cosmo_product_codes = [cosmo_black_product_code, cosmo_calypso_product_code]
+    df_costco_sell_in.loc[df_costco_sell_in['ProductCode'].isin(cosmo_product_codes), 'Bike Type'] = 'Cosmo 2.0 T CPO'
+
+    cruiser_product_codes = [cruiser_graphite_product_code, cruiser_copper_product_code]
+    df_costco_sell_in.loc[df_costco_sell_in['ProductCode'].isin(cruiser_product_codes), 'Bike Type'] = 'Cruiser 2.0 CPO'
+
+    #I guess costco lowrider and cruiser sell in happens before 2025 and Cosmo 2.0 sell in happens during 2025
+    #actually I think since its Costco sell in the product code takes care of this, at least for a sales enquiry, maybe credits undoes this
+    #actually if it is pulled with invoices and credits, just take the positives, the negatives are returns.
+    #last lowrider BLK-GPH sell-in has order date of 1/28/2025 with quantity 120
+    #last lowrider BLK-CPR sell-in has order date 1/28/2025 with quantity 32
+    #last cruiser BLK-CPR has order date 4/22/2025 with quantity 28
+    #last cruiser BLK-GPH has order date 4/22/2025 with quantity 115
+
+
+
+
+    return df_cpos, df_costco_sell_in
 
 # df_orders_clean.loc[
 #         mask_cosmo & df_orders_clean['line_name'].str.contains("black", case=False, na=False),

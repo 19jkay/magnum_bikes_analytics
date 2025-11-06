@@ -32,14 +32,48 @@ df_full_shopify_cpos = pd.concat(
 df_full_shopify_cpos['Final Price'] = df_full_shopify_cpos['Final Price'].round(2)
 df_full_shopify_cpos.drop(columns=['Product line_name'], inplace=True)
 
-df_unleashed_cpos = get_unleashed_CPOs(start_date_unleashed, end_date_unleashed)
+df_unleashed_cpos, df_costco_sell_in = get_unleashed_costco_CPOs_and_sell_in(start_date_unleashed, end_date_unleashed)
+
+df_costco_sell_in = df_costco_sell_in.loc[df_costco_sell_in['CustomerType'] == 'Costco'].copy()
+df_costco_sell_in = df_costco_sell_in.loc[df_costco_sell_in['OrderQuantity'] >= 0]
+df_costco_sell_in.drop(columns=['Status', 'CustomerCode', 'LineTotal', 'City', 'Region', 'Country', 'PostalCode', 'Cost'], inplace=True)
+
+# Sample corrective row (adjust values as needed)
+new_row = {
+    "Number": "SI-CORRECTION",  # give it a unique identifier
+    "CustomerName": "Costco",
+    "Date": pd.Timestamp("2025-09-03"),  # same date as issue
+    "ProductCode": "23150052",
+    "ProductDescription": "Cosmo 2.0 T - Black- 48v 15 Ah",
+    "OrderQuantity": -1588,   # correction
+    "ProductGroup": "Bikes",
+    "CustomerType": "Costco",
+    "Type": "Invoice",
+    "Date Year": 2025,
+    "Date Month": "September",
+    "Date MonthNum": 9,
+    "Date Quarter": "Q3",
+    "Bike Type": "Cosmo 2.0 T CPO"
+}
+
+# Convert to DataFrame
+new_row_df = pd.DataFrame([new_row])
+# Concatenate to your existing df_costco_sell_in
+df_costco_sell_in = pd.concat([df_costco_sell_in, new_row_df], ignore_index=True)
+print(df_costco_sell_in.tail())
+print("Columns I Need: ", df_costco_sell_in.columns)
+print("Sell-in: ", df_costco_sell_in['OrderQuantity'].sum())
+
+
+
+
 df_unleashed_cpos.drop(columns=['Status', 'CustomerCode'], inplace=True)
 df_unleashed_cpos_after = df_unleashed_cpos[df_unleashed_cpos['Date'] > '12/31/2024 0:00:00'].copy()
 
 #costco returns lowriders cruisers I think
 df_unleashed_costco = df_unleashed_cpos.loc[df_unleashed_cpos['CustomerType'] == 'Costco'].copy()
-df_unleashed_costco_sold_in = df_unleashed_costco.loc[df_unleashed_costco['OrderQuantity'] >= 0].copy()
 df_unleashed_costco = df_unleashed_costco.loc[df_unleashed_costco['OrderQuantity'] < 0]
+print("Costco Returns: ", df_unleashed_costco['OrderQuantity'].sum())
 #get stock adjustment returns
 df_stock_adjustment_returns = Unleashed_PowerBI_Costco_Returns(start_date_unleashed, end_date_unleashed)
 print('stock adjustment columns: ', df_stock_adjustment_returns.columns)
@@ -89,6 +123,7 @@ df_full_shopify_cpos['Data Source'] = 'Shopify'
 df_unleashed_aligned['Data Source'] = 'Unleashed'
 df_combined = pd.concat([df_full_shopify_cpos, df_unleashed_aligned], ignore_index=True)
 df_combined["order_id"] = df_combined["order_id"].astype(str)
+df_combined["order_id"] = df_combined["order_id"].apply(lambda x: "'" + str(x))
 
 
 #Costco Returns
@@ -140,17 +175,26 @@ print("sum2: ", df_all_returns_costco['Positive Return Quantity'].sum())
 # df_unleashed_cpos.to_excel(file_path, index=False)
 # print(f"Excel file written to: {file_path}")
 
-file_path = fr"C:\Users\joshu\Documents\Shopify_API\CPO_orders_shopify_unleashed.xlsx"
+print(df_combined.dtypes)
+df_combined["created_at"] = df_combined["created_at"].dt.strftime("%Y-%m-%d")
+
+file_path = fr"C:\Users\joshu\Documents\Reporting\PowerBI_data\CPO_orders_shopify_unleashed.xlsx"
 os.makedirs(os.path.dirname(file_path), exist_ok=True)
 df_combined.to_excel(file_path, index=False)
 print(f"Excel file written to: {file_path}")
 
-file_path = fr"C:\Users\joshu\Documents\Shopify_API\costco_CPO_returns.xlsx"
+print(df_all_returns_costco.dtypes)
+df_all_returns_costco["Date"] = df_all_returns_costco["Date"].dt.strftime("%Y-%m-%d")
+
+file_path = fr"C:\Users\joshu\Documents\Reporting\PowerBI_data\costco_CPO_returns.xlsx"
 os.makedirs(os.path.dirname(file_path), exist_ok=True)
 df_all_returns_costco.to_excel(file_path, index=False)
 print(f"Excel file written to: {file_path}")
 
-file_path = fr"C:\Users\joshu\Documents\Shopify_API\costco_sold_in.xlsx"
+df_costco_sell_in["Date"] = df_costco_sell_in["Date"].dt.strftime("%Y-%m-%d")
+file_path = fr"C:\Users\joshu\Documents\Reporting\PowerBI_data\costco_sell_in.xlsx"
 os.makedirs(os.path.dirname(file_path), exist_ok=True)
-df_unleashed_costco_sold_in.to_excel(file_path, index=False)
+df_costco_sell_in.to_excel(file_path, index=False)
 print(f"Excel file written to: {file_path}")
+
+
