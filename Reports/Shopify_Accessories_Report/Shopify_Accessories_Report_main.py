@@ -105,6 +105,23 @@ df_location_inventory_sales = df_location_inventory_sales[keep_cols_final]
 df_location_inventory_sales.rename(columns={'SKU Name_x' : 'SKU Name Variant', 'title' : 'SKU Shopify', 'Location' : 'Store Location'}, inplace=True)
 df_location_inventory_sales = df_location_inventory_sales.loc[df_location_inventory_sales['product_type'] == 'Accessories']
 
+#Convert 'QtyOnHand' to numeric column
+df_location_inventory_sales['Qty Available'] = pd.to_numeric(df_location_inventory_sales['Qty Available'], errors='coerce')
+df_location_inventory_sales['Qty Available'] = df_location_inventory_sales['Qty Available'].fillna(0)
+
+# fill na with zeros so that blank sales entrees are zeros since there were no sales
+df_location_inventory_sales['Units Sold TTM'] = pd.to_numeric(df_location_inventory_sales['Units Sold TTM'], errors='coerce')
+df_location_inventory_sales['Units Sold TTM'] = df_location_inventory_sales['Units Sold TTM'].fillna(0)
+
+df_location_inventory_sales['Units Sold T3M'] = pd.to_numeric(df_location_inventory_sales['Units Sold T3M'], errors='coerce')
+df_location_inventory_sales['Units Sold T3M'] = df_location_inventory_sales['Units Sold T3M'].fillna(0)
+
+
+df_location_inventory_sales['WOH (12 Months)'] = (df_location_inventory_sales['Qty Available']/df_location_inventory_sales['Units Sold TTM']) * 52
+df_location_inventory_sales[['WOH (12 Months)']] = df_location_inventory_sales[['WOH (12 Months)']].map(lambda x: 'NaN' if pd.isna(x) else x)
+
+df_location_inventory_sales['WOH (3 Months)'] = (df_location_inventory_sales['Qty Available']/df_location_inventory_sales['Units Sold T3M']) * 13
+df_location_inventory_sales[['WOH (3 Months)']] = df_location_inventory_sales[['WOH (3 Months)']].map(lambda x: 'NaN' if pd.isna(x) else x)
 
 
 file_path = fr"C:\Users\joshu\Documents\Reporting\Shopify_Reports\Shopify_Inventory_Report.xlsx"

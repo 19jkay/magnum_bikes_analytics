@@ -2,6 +2,7 @@ from Reports.CPO_Report.CPO_Report_Shopify_Stores import *
 from Reports.CPO_Report.CPO_Report_Shopify_Online import *
 from Reports.CPO_Report.CPO_Report_Unleashed import *
 from Reports.CPO_Report.CPO_Report_Stock_Adjustment_CPOs import *
+from Reports.CPO_Report.CPO_Report_Return_Reasons import *
 import pandas as pd
 import os
 from datetime import datetime
@@ -197,4 +198,5 @@ os.makedirs(os.path.dirname(file_path), exist_ok=True)
 df_costco_sell_in.to_excel(file_path, index=False)
 print(f"Excel file written to: {file_path}")
 
-
+#SAVE COSTCO RETURN REASONS call function from CPO_Report_Return_Reasons
+get_return_reason_data()
