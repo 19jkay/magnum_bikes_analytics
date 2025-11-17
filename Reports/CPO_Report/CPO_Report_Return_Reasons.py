@@ -556,10 +556,6 @@ def get_return_reason_data():
             how='left'
         )
 
-
-
-
-        #
         df.drop(columns=['comment'], inplace=True)
         df.rename(columns={'CRTXT' : 'comment'}, inplace=True)
 

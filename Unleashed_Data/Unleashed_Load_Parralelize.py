@@ -108,6 +108,7 @@ def get_sales_orders_date(unleashed_data_name, start_date, end_date, url_param, 
     # Include serialBatch=true to get serial numbers in the response
     # url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true"
     url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true&orderStatus=Open,Completed,Backordered,Parked,Placed,Deleted,Accounting"
+    # url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true"
 
     url_base = 'SalesOrders' + "/Page"
     unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)

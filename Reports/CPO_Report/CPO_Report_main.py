@@ -89,9 +89,6 @@ print("Costco1 quantity sum: ", df_unleashed_costco['OrderQuantity'].sum())
 
 
 
-
-
-
 # Mapping from Unleashed → Shopify
 unleashed_to_shopify = {
     'Number': 'order_id',
@@ -166,15 +163,6 @@ print("sum1: ", df_all_returns_costco['quantity'].sum())
 print("sum2: ", df_all_returns_costco['Positive Return Quantity'].sum())
 
 
-# file_path = fr"C:\Users\joshu\Documents\Shopify_API\shopify_orders_CPOs.xlsx"
-# os.makedirs(os.path.dirname(file_path), exist_ok=True)
-# df_full_shopify_cpos.to_excel(file_path, index=False)
-# print(f"Excel file written to: {file_path}")
-#
-# file_path = fr"C:\Users\joshu\Documents\Shopify_API\unleashed_orders_CPOs.xlsx"
-# os.makedirs(os.path.dirname(file_path), exist_ok=True)
-# df_unleashed_cpos.to_excel(file_path, index=False)
-# print(f"Excel file written to: {file_path}")
 
 print(df_combined.dtypes)
 df_combined["created_at"] = df_combined["created_at"].dt.strftime("%Y-%m-%d")

@@ -1,312 +1,328 @@
-import pandas as pd
 from datetime import datetime, timedelta
-import os
-
-from Unleashed_Data.Unleashed_Clean_Parallel import Unleashed_SalesOrders_clean_data_parallel, Unleashed_PurchaseOrders_clean_data_parallel, Unleashed_stock_adjustment_clean_data_parallel, Unleashed_credit_note_clean_data_parallel
+import pandas as pd
 from Unleashed_Data.Unleashed_Load_Parralelize import get_data_parallel
 from AI_Automation.Dashboards.Operations_Demand_Scorecard.Operations_Demand_Scorecard_helper import unwrap_sales_orders, unwrap_warehouse_sales_orders, get_parts_list
 
 
-
-today = datetime.today()
-today_str = today.strftime('%Y-%m-%d')
-
-# Date exactly one year ago
-one_year_ago = today - timedelta(days=365)
-one_year_ago_str = one_year_ago.strftime('%Y-%m-%d')
-# print("one year ago: ", one_year_ago_str)
-
-start_date = '2025-09-22'
-end_date = '2025-10-04' #always do one more here than you do in unleashed view sales orders
-
-reload_data = False
-save_excel = False
-
-
-df_stock_adjustment = get_data_parallel(unleashed_data_name='StockAdjustments', start_date=start_date)
-#
-file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_stock_adjustment_data.xlsx"
-os.makedirs(os.path.dirname(file_path), exist_ok=True)
-df_stock_adjustment.to_excel(file_path, index=False)
-print(f"Excel file written to: {file_path}")
-print("DID IT")
-#
-# df_credit_notes = get_data_parallel(unleashed_data_name='CreditNotes', start_date=start_date, end_date=end_date)
-#
-# file_path = fr"C:\Users\joshu\Documents\Unleashed_API\unleashed_parallel_credit_notes_data.xlsx"
-# os.makedirs(os.path.dirname(file_path), exist_ok=True)
-# df_credit_notes.to_excel(file_path, index=False)
-# print(f"Excel file written to: {file_path}")
-# print("DID IT")
-
-
-
-df_SalesOrders_completed_dates = get_data_parallel(unleashed_data_name="SalesOrders", start_date=start_date, end_date=end_date)
-df_SalesOrders_order_dates = get_data_parallel(unleashed_data_name="SalesOrdersDate", start_date=start_date, end_date=end_date)
-print("Fulfuillment")
-print("UNLEASHED ORDERS")
-Unleashed_Orders = ['New Orders', 'Completed Orders', 'Deleted', 'Completed %', 'Parked', 'Backordered', 'Hold', 'Pre Orders', '# of Units on Pre-Order', 'Accounting, Placed or Ready to Ship']
-
-new_orders = len(df_SalesOrders_order_dates)
-completed_orders = df_SalesOrders_completed_dates['OrderNumber'].nunique()
-print("New Orders: ", new_orders) #GOT IT
-print("Completed Orders: ", completed_orders)
-
-status_counts = df_SalesOrders_order_dates['OrderStatus'].value_counts()
-# print(status_counts)
-deleted = status_counts.get('Deleted', 0)
-completed_percent = completed_orders / new_orders * 100
-parked = status_counts.get('Parked', 0)
-backordered = status_counts.get('Backordered', 0)
-hold = status_counts.get('HOLD', 0)
-preorders = 0
-num_units_on_preorder = 0
-
-# Sum relevant statuses directly
-accounting_placed_ready_to_ship = sum(
-    status_counts.get(key, 0)
-    for key in ['Accounting', 'Placed', 'Ready to Ship']
-)
-
-Unleashed_Orders_data = [new_orders, completed_orders, deleted, completed_percent, parked, backordered, hold, preorders, num_units_on_preorder, accounting_placed_ready_to_ship]
-
-print("Deleted: ", deleted)
-print("Completed %: ", completed_percent)
-print("Parked: ", parked)
-print("Backordered: ", backordered)
-print("HOLD: ", hold)
-print("Preorders: ", preorders)
-print("Number of units on preorder: ", num_units_on_preorder)
-print("Accounting Placed Ready to Ship: ", accounting_placed_ready_to_ship)
-
-
-
-
-
-print("BIKES")
-Bikes = ['Total # of Bike Orders: Jam-N', '# of Bikes Fulfilled: Jam-N', 'Jam-N Bikes Per Order', 'Jam-N Service Level(days)']
-Bikes_values = []
-df_unwrapped_salesorders_order_dates = unwrap_sales_orders(df_SalesOrders_order_dates)
-df_unwrapped_salesorders_JamN_bikes_order_dates = df_unwrapped_salesorders_order_dates.loc[
-    (df_unwrapped_salesorders_order_dates['WarehouseName'] == 'Jam-N Logistics') &
-    (df_unwrapped_salesorders_order_dates['ProductGroup'] == 'Bikes')]
-
-Total_num_Bike_Orders_JamN = df_unwrapped_salesorders_JamN_bikes_order_dates['OrderNumber'].nunique()
-print("Total # of Bike Orders: Jam-N: ", Total_num_Bike_Orders_JamN)
-Bikes_values.append(Total_num_Bike_Orders_JamN)
-
-df_unwrapped_salesorders_completed_date = unwrap_warehouse_sales_orders(df_SalesOrders_completed_dates)
-df_unwrapped_salesorders_completed_date_JamN_bikes = df_unwrapped_salesorders_completed_date.loc[
-    (df_unwrapped_salesorders_completed_date['WarehouseName'] == 'Jam-N Logistics') &
-    (df_unwrapped_salesorders_completed_date['ProductGroup'] == 'Bikes')]
-df_unwrapped_salesorders_completed_date_JamN_bikes = df_unwrapped_salesorders_completed_date_JamN_bikes.loc[df_unwrapped_salesorders_completed_date_JamN_bikes['OrderStatus'] == 'Completed']
-
-num_bikes_fulfilled_JamN = df_unwrapped_salesorders_completed_date_JamN_bikes['OrderQuantity'].sum()
-print("Total number of bikes fulfulled JamN 2: ", num_bikes_fulfilled_JamN)
-Bikes_values.append(num_bikes_fulfilled_JamN)
-
-JamN_bikes_per_order = num_bikes_fulfilled_JamN / Total_num_Bike_Orders_JamN
-print("Jam-N Bikes Per Order: ", JamN_bikes_per_order)
-Bikes_values.append(JamN_bikes_per_order)
-
-JamN_service_level_days = 0
-print("Jam-N Service Level(days): ", JamN_service_level_days)
-Bikes_values.append(JamN_service_level_days)
-
-
-
-
-
-
-
-
-
-
-print("/////////////////////")
-print("ACCESSORIES")
-Accessories = ['Total Accessories Orders', 'Accessory Units Fulfilled', 'Accessories Per Completed Order', 'Rack Units Fulfilled']
-Accessories_values = []
-#Now do accessories section
-df_unwrapped_salesorders_accessories_order_dates = df_unwrapped_salesorders_order_dates.loc[df_unwrapped_salesorders_order_dates['ProductGroup'] == 'Accessories']
-total_accessories_orders = df_unwrapped_salesorders_accessories_order_dates['OrderNumber'].nunique()
-Accessories_values.append(total_accessories_orders)
-print("Total Accessories Orders: ", total_accessories_orders)
-
-df_unwrapped_salesorders_accessories_completed_date = df_unwrapped_salesorders_completed_date.loc[df_unwrapped_salesorders_completed_date['ProductGroup'] == 'Accessories']
-accessory_units_fulfilled = df_unwrapped_salesorders_accessories_completed_date['OrderQuantity'].sum()
-Accessories_values.append(accessory_units_fulfilled)
-print("Accessory Units Fulfilled: ", accessory_units_fulfilled)
-
-accessories_per_completed_order = accessory_units_fulfilled / total_accessories_orders
-Accessories_values.append(accessories_per_completed_order)
-print("Accessories Per Completed Order: ", accessories_per_completed_order)
-
-rack_units_fulfilled = 0
-Accessories_values.append(rack_units_fulfilled)
-print("Rack Units Fulfilled: ", rack_units_fulfilled)
-
-
-
-
-print("////////////////////////")
-print("PARTS")
-Parts = ['Total Parts Orders', 'Parts Units Fulfilled', 'Parts per Order', 'Acc & Parts Service Level (days)']
-Parts_values = []
-
-df_unwrapped_salesorders_parts_order_dates = df_unwrapped_salesorders_order_dates.loc[df_unwrapped_salesorders_order_dates['ProductGroup'].isin(get_parts_list())]
-total_parts_orders = df_unwrapped_salesorders_parts_order_dates['OrderNumber'].nunique()
-Parts_values.append(total_parts_orders)
-print("Total Parts Orders: ", total_parts_orders)
-
-df_unwrapped_salesorders_parts_completed_date = df_unwrapped_salesorders_completed_date.loc[df_unwrapped_salesorders_completed_date['ProductGroup'].isin(get_parts_list())]
-parts_units_fulfilled = df_unwrapped_salesorders_parts_completed_date['OrderQuantity'].sum()
-Parts_values.append(parts_units_fulfilled)
-print("Parts Units Fulfilled: ", parts_units_fulfilled)
-
-parts_per_order = parts_units_fulfilled / total_parts_orders
-Parts_values.append(parts_per_order)
-print("Parts Per Order: ", parts_per_order)
-
-Acc_Parts_Service_Level_days = 0
-Parts_values.append(Acc_Parts_Service_Level_days)
-print("Acc & Parts Service Level (days): ", Acc_Parts_Service_Level_days)
-
-
-
-
-
-
-
-
-
-
-print("/////////////////////")
-df_stockonhand = get_data_parallel(unleashed_data_name="StockOnHand", end_date=today_str)
-print("Inventory Management")
-print("Inventory Health")
-Inventory_Health = ['Bikes in stock', 'Bikes in back orders', 'Parts in stock', 'Parts in back order']
-Inventory_Health_values = []
-
-df_stockonhand_bikes = df_stockonhand.loc[df_stockonhand['ProductGroupName'] == 'Bikes']
-bikes_in_stock = df_stockonhand_bikes['QtyOnHand'].sum()
-Inventory_Health_values.append(bikes_in_stock)
-print("Bikes in stock: ", bikes_in_stock)
-
-df_unwrapped_salesorders_order_dates_backorder_bikes = df_unwrapped_salesorders_order_dates.loc[
-    (df_unwrapped_salesorders_order_dates['OrderStatus'] == 'Backordered')
-    & (df_unwrapped_salesorders_order_dates['ProductGroup'] == 'Bikes')]
-bikes_in_back_orders = df_unwrapped_salesorders_order_dates_backorder_bikes['OrderQuantity'].sum()
-Inventory_Health_values.append(bikes_in_back_orders)
-print("Bikes in back orders: ", bikes_in_back_orders)
-
-df_stockonhand_parts = df_stockonhand.loc[df_stockonhand['ProductGroupName'].isin(get_parts_list())]
-parts_in_stock = df_stockonhand_parts['QtyOnHand'].sum()
-Inventory_Health_values.append(parts_in_stock)
-print("Parts in stock: ", parts_in_stock)
-
-df_unwrapped_salesorders_order_dates_backorder_parts = df_unwrapped_salesorders_order_dates.loc[
-    (df_unwrapped_salesorders_order_dates['OrderStatus'] == 'Backordered')
-    & (df_unwrapped_salesorders_order_dates['ProductGroup'].isin(get_parts_list()))]
-parts_in_back_order = df_unwrapped_salesorders_order_dates_backorder_parts['OrderQuantity'].sum()
-Inventory_Health_values.append(parts_in_back_order)
-print("Parts in back orders: ", parts_in_back_order)
-
-
-print("Inventory Control")
-Inventory_control = ['Weekly parts sample audit', 'Accuracy %', 'Full Montly Cycle count', 'Count Accuracy']
-
-
-
-
-print("Bike Returns")
-Bike_returns = ['Costco Returns', 'Other Returns', 'Total Returns', 'Refurbished', 'Shipped to Jam-N', 'In BY', 'Stripped for Parts', 'Total refurb parts', 'Returns Backlog']
-df_stock_adjustment = Unleashed_stock_adjustment_clean_data_parallel(start_date=start_date, reload=True, save_excel=True)
-df_credit_notes = Unleashed_credit_note_clean_data_parallel(start_date=start_date, end_date=end_date, reload=True, save_excel=True)
-
-CPO_codes = ['CPO23150052', 'CPO23150051']
-df_stock_adjustment_costco_returns_CPOcosmos_completed = df_stock_adjustment.loc[(df_stock_adjustment['ProductCode'].isin(CPO_codes)) & (df_stock_adjustment['Status'] == 'Completed')].copy()
-df_stock_adjustment_costco_returns_CPOcosmos_completed['AdjustmentDate'] = pd.to_datetime(df_stock_adjustment_costco_returns_CPOcosmos_completed['AdjustmentDate'])
-df_stock_adjustment_costco_returns_CPOcosmos_completed = df_stock_adjustment_costco_returns_CPOcosmos_completed.loc[df_stock_adjustment_costco_returns_CPOcosmos_completed['AdjustmentDate'] < end_date].copy()
-costco_returns_cosmo = len(df_stock_adjustment_costco_returns_CPOcosmos_completed)
-
-lowrider_cruiser_product_codes = ['Low Rider BLK-GPH', 'Low Rider - BLK-CPR', 'Cruiser BLK-GPH', 'Cruiser BLK-CPR']
-df_credit_notes_costco_returns_lowriders_cruisers = df_credit_notes.loc[(df_credit_notes['ProductCode'].isin(lowrider_cruiser_product_codes)) & (df_credit_notes['Status'] == 'Completed')].copy()
-
-costco_returns_lowriders_cruisers = len(df_credit_notes_costco_returns_lowriders_cruisers)
-
-costco_returns = costco_returns_cosmo + costco_returns_lowriders_cruisers
-# Bike_returns_values.append(costco_returns)
-print("Cosmo returns: ", costco_returns_cosmo)
-print("Costco Returns: ", costco_returns)
-
-other_returns = 0
-# Bike_returns_values.append(other_returns)
-
-total_returns = costco_returns + other_returns
-# Bike_returns_values.append(total_returns)
-
-refurbished = 0
-shipped_to_JamN = 0
-in_by = 0
-stripped_for_parts = 0
-total_refurb_parts = 0
-return_backlog = 0
-
-Bike_returns_values = [costco_returns, other_returns, total_returns, refurbished, shipped_to_JamN, in_by, stripped_for_parts, total_refurb_parts, return_backlog]
-
-
-
-
-
-
-
-print("////////////////////////")
-df_PurchaseOrders = Unleashed_PurchaseOrders_clean_data_parallel(start_date=start_date, end_date=end_date, reload=reload_data, save_excel=save_excel)
-print("Procurement")
-print("Purchases")
-Purchases = ['PO placed in process', 'Order Receipt', 'On time delivery']
-PurchaseOrders_status_counts = df_PurchaseOrders['OrderStatus'].value_counts()
-print("PurchaseOrders")
-print(PurchaseOrders_status_counts)
-
-
-Warranty = ['Warranty Claims Submitted to Factory', 'Warranty Claims Approved', 'Claims recovered within the SLA']
-
-
-
-
-print("/////////////////////////")
-print("Product")
-Product = ['L3 support tickets Rx', 'L3 Support tickets closed', 'L3 Support backlog', 'T minus milestones', '% hit']
-
-
-
-
-print("////////////////////////")
-print("Cust. Service")
-
-Inbound_demand = ['Inbound Calls', 'Tickets', 'Total Inbound Demand']
-Zendesk = ['Tickets Generated', 'Tickets Solved', 'Tickets Solved %', 'Warranty Parts Fulfilled', 'Total Outbound Calls', 'Rated Surveys', 'Surveyed satisfaction tickets', '# of Satisfaction Surveys  Completed']
-Backlog = ['Open Tickets', 'Back Orders']
-
-
-# print("Total orders in backorder: ", len(df_SalesOrders_order_dates.loc[df_SalesOrders_order_dates['OrderStatus'] == 'Backordered']))
-
-
-
-
-#Write data to excel
-title = 'Operations Scorecard'
-global_list = Unleashed_Orders + Bikes + Accessories + Parts + Inventory_Health
-
-date_range = start_date + " to " + end_date
-global_values = Unleashed_Orders_data + Bikes_values + Accessories_values + Parts_values + Inventory_Health_values
-
-global_dict = {title : global_list, date_range : global_values}
-df_global = pd.DataFrame(global_dict)
-
-file_path = fr"C:\Users\joshu\Documents\Reporting\Unleashed_Reports\Operations_Demand_Scorecard.xlsx"
-folder_path = os.path.dirname(file_path)
-os.makedirs(folder_path, exist_ok=True)
-df_global.to_excel(file_path, index=False)
-print(f"Excel file written to: {file_path}")
+#custom statuses are grouped into parked
+
+def first_try_dashboard():
+    print("First Try Dashboard")
+
+    today = datetime.today()
+    yesterday = today - timedelta(days=1)
+    one_week_ago = today - timedelta(days=7)
+    far_back = datetime(2025, 1, 1)
+
+    #get open orders from (one year and week ago) to (week ago) this finds all open orders we had before reporting week
+    start_date_far_back = far_back.strftime('%Y-%m-%d')
+    end_date_one_week_ago = one_week_ago.strftime('%Y-%m-%d')
+    df_salesOrders_before_week = get_data_parallel(unleashed_data_name="SalesOrdersDate", start_date=start_date_far_back,  end_date=end_date_one_week_ago)
+    print(start_date_far_back)
+    print(end_date_one_week_ago)
+
+    #get old open orders
+    old_status_counts = df_salesOrders_before_week['OrderStatus'].value_counts()
+    old_parked = old_status_counts.get('Parked', 0)
+    old_backordered = old_status_counts.get('Backordered', 0)
+    old_placed = old_status_counts.get('Placed', 0)
+    old_open_orders = old_placed + old_parked + old_backordered
+
+
+
+    #get orders during this week so we can analyze orders we got this week
+    start_date_one_week_ago = one_week_ago.strftime('%Y-%m-%d')
+    end_date_today = today.strftime('%Y-%m-%d') #end date gives data up to yesterday since end date is not inclusive
+    df_salesOrders_week = get_data_parallel(unleashed_data_name="SalesOrdersDate", start_date=start_date_one_week_ago,  end_date=end_date_today)
+    print(start_date_one_week_ago)
+    print(end_date_today)
+
+    #Order status counts
+    new_num_orders = len(df_salesOrders_week)
+    status_counts = df_salesOrders_week['OrderStatus'].value_counts()
+    this_week_completed = status_counts.get('Completed', 0)
+    new_deleted = status_counts.get('Deleted', 0)
+    new_parked = status_counts.get('Parked', 0)
+    new_backordered = status_counts.get('Backordered', 0)
+    new_placed = status_counts.get('Placed', 0)
+    new_open_orders = new_placed + new_parked + new_backordered
+
+
+
+    ops_summary_this_week = pd.DataFrame({
+        "Metric": [
+            "Old Open Orders",
+            "New Orders This Week",
+            "TOTAL ORDERS",
+            "New Orders This Week Completed",
+            "New Orders This Week Deleted",
+            "TOTAL OPEN ORDERS"
+        ],
+        "Value": [
+            old_open_orders,
+            new_num_orders,
+            old_open_orders + new_num_orders,
+            this_week_completed,
+            new_deleted,
+            old_open_orders + new_open_orders
+        ]
+    })
+    print(ops_summary_this_week)
+
+
+
+    print("///////////////////////")
+    ops_summary_open_orders = pd.DataFrame({
+        "Metric": [
+            "Old Open Orders Parked",
+            "Old Open Orders Backordered",
+            "Old Open Orders Placed",
+            "TOTAL OLD OPEN ORDERS",
+            "New Open Orders Parked",
+            "New Open Orders Backordered",
+            "New Open Orders Placed",
+            "TOTAL NEW OPEN ORDERS",
+            "TOTAL OPEN ORDERS"
+        ],
+        "Value": [
+            old_parked,
+            old_backordered,
+            old_placed,
+            old_open_orders,
+            new_parked,
+            new_backordered,
+            new_placed,
+            new_open_orders,
+            old_open_orders + new_open_orders
+        ]
+    })
+    print(ops_summary_open_orders)
+
+
+
+
+    print("///////////////////////")
+    df_SalesOrders_completed_dates = get_data_parallel(unleashed_data_name="SalesOrders", start_date=start_date_one_week_ago, end_date=end_date_today)  # Sales Orders By Completed Date
+    total_completed_orders_this_week = df_SalesOrders_completed_dates['OrderNumber'].nunique()
+    ops_summary_completed = pd.DataFrame({
+        "Metric": [
+            "Old Orders Completed",
+            "New Orders Completed",
+            "TOTAL COMPLETED ORDERS"
+        ],
+        "Value": [
+            total_completed_orders_this_week - this_week_completed,
+            this_week_completed,
+            total_completed_orders_this_week,
+        ]
+    })
+    print(ops_summary_completed)
+
+
+
+
+
+
+    #Now start looking at
+    #completed bike orders = Completed orders - new orders completed
+
+    #of all the completed orders, count the bike orders
+    print("///////////////////////")
+    df_unwrapped_salesorders_completed_date = unwrap_warehouse_sales_orders(df_SalesOrders_completed_dates)
+    df_unwrapped_salesorders_JamN_bikes_completed_dates = df_unwrapped_salesorders_completed_date.loc[
+        (df_unwrapped_salesorders_completed_date['WarehouseName'] == 'Jam-N Logistics') &
+        (df_unwrapped_salesorders_completed_date['ProductGroup'] == 'Bikes')] #DO I NEED TO EXCLUDE CUSTOMER TYPE = COSTCO? That is what makes the orderquantity sum large
+    Total_num_Bike_Orders_JamN = df_unwrapped_salesorders_JamN_bikes_completed_dates['OrderNumber'].nunique()
+    num_bikes_fulfilled_JamN = df_unwrapped_salesorders_JamN_bikes_completed_dates['OrderQuantity'].sum()
+
+    ops_bike_summary_completed = pd.DataFrame({
+        "Metric": [
+            "Total # of Bike Orders: Jam-N",
+            "# of Bikes Fulfilled: Jam-N",
+            "Jam-N Bikes Per Order"
+        ],
+        "Value": [
+            Total_num_Bike_Orders_JamN,
+            num_bikes_fulfilled_JamN,
+            num_bikes_fulfilled_JamN / Total_num_Bike_Orders_JamN
+        ]
+    })
+    print(ops_bike_summary_completed)
+
+
+
+
+
+    #Accessories
+    print("///////////////////////")
+    df_unwrapped_salesorders_accessories_order_dates = df_unwrapped_salesorders_completed_date.loc[df_unwrapped_salesorders_completed_date['ProductGroup'] == 'Accessories']
+    total_accessories_orders = df_unwrapped_salesorders_accessories_order_dates['OrderNumber'].nunique()
+    accessory_units_fulfilled = df_unwrapped_salesorders_accessories_order_dates['OrderQuantity'].sum()
+
+    ops_accessory_summary_completed = pd.DataFrame({
+        "Metric": [
+            "Total Accessories Orders",
+            "Accessory Units Fulfilled",
+            "Accessories Per Completed Order"
+        ],
+        "Value": [
+            total_accessories_orders,
+            accessory_units_fulfilled,
+            accessory_units_fulfilled / total_accessories_orders
+        ]
+    })
+    print(ops_accessory_summary_completed)
+
+
+
+
+
+
+
+    #Parts
+    print("///////////////////////")
+    df_unwrapped_salesorders_parts_completed_dates = df_unwrapped_salesorders_completed_date.loc[df_unwrapped_salesorders_completed_date['ProductGroup'].isin(get_parts_list())]
+    total_parts_orders = df_unwrapped_salesorders_parts_completed_dates['OrderNumber'].nunique()
+    print("Total Parts Orders: ", total_parts_orders)
+    parts_units_fulfilled = df_unwrapped_salesorders_parts_completed_dates['OrderQuantity'].sum()
+    print("Parts Units Fulfilled: ", parts_units_fulfilled)
+
+    ops_parts_summary_completed = pd.DataFrame({
+        "Metric": [
+            "Total Parts Orders",
+            "Parts Units Fulfilled",
+            "Parts per Order"
+        ],
+        "Value": [
+            total_parts_orders,
+            parts_units_fulfilled,
+            parts_units_fulfilled / total_parts_orders
+        ]
+    })
+    print(ops_parts_summary_completed)
+
+
+    #MAKE EXCEL FILE
+    from openpyxl import load_workbook
+    from openpyxl.styles import Font
+
+    # --- Your existing summaries (already defined earlier in your script) ---
+    # ops_summary_this_week
+    # ops_summary_open_orders
+    # ops_summary_completed
+    # ops_bike_summary_completed
+    # ops_accessory_summary_completed
+    # ops_parts_summary_completed
+
+    # Collect all summaries with titles
+    sections = [
+        ("This Week Summary", ops_summary_this_week),
+        ("Open Orders Summary", ops_summary_open_orders),
+        ("Completed Orders Summary", ops_summary_completed),
+        ("Bike Orders Summary", ops_bike_summary_completed),
+        ("Accessories Summary", ops_accessory_summary_completed),
+        ("Parts Summary", ops_parts_summary_completed),
+    ]
+
+    # Build a combined DataFrame with titles + spacing
+    combined = []
+    for title, df in sections:
+        # Title row
+        combined.append(pd.DataFrame({"Metric": [title], "Value": [""]}))
+        # Actual section
+        combined.append(df)
+        # Blank spacer row
+        combined.append(pd.DataFrame({"Metric": [""], "Value": [""]}))
+
+    final_df = pd.concat(combined, ignore_index=True)
+
+    # Save to Excel at the requested path
+    file_path = fr"C:\Users\joshu\Documents\Ops_Dashboard_Draft.xlsx"
+    final_df.to_excel(file_path, index=False)
+
+    # Optional: format titles bold
+    wb = load_workbook(file_path)
+    ws = wb.active
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, max_col=1):  # only "Metric" column
+        cell = row[0]
+        if cell.value in [title for title, _ in sections]:
+            cell.font = Font(bold=True)
+    wb.save(file_path)
+
+
+def second_try_dashboard():
+    print("Second Try Dashboard")
+    today = datetime.today()
+    yesterday = today - timedelta(days=1)
+    one_week_ago = today - timedelta(days=7)
+    far_back = datetime(2025, 1, 1)
+
+    # get open orders from (one year and week ago) to (week ago) this finds all open orders we had before reporting week
+    start_date_far_back = far_back.strftime('%Y-%m-%d')
+    end_date_one_week_ago = one_week_ago.strftime('%Y-%m-%d')
+    df_salesOrders_before_week = get_data_parallel(unleashed_data_name="SalesOrdersDate",
+                                                   start_date=start_date_far_back, end_date=end_date_one_week_ago)
+    print(start_date_far_back)
+    print(end_date_one_week_ago)
+
+    # get old open orders
+    old_status_counts = df_salesOrders_before_week['OrderStatus'].value_counts()
+    old_parked = old_status_counts.get('Parked', 0)
+    old_backordered = old_status_counts.get('Backordered', 0)
+    old_placed = old_status_counts.get('Placed', 0)
+    old_open_orders = old_placed + old_parked + old_backordered
+
+    # get orders during this week so we can analyze orders we got this week
+    start_date_one_week_ago = one_week_ago.strftime('%Y-%m-%d')
+    end_date_today = today.strftime('%Y-%m-%d')  # end date gives data up to yesterday since end date is not inclusive
+    df_salesOrders_week = get_data_parallel(unleashed_data_name="SalesOrdersDate", start_date=start_date_one_week_ago,
+                                            end_date=end_date_today)
+    print(start_date_one_week_ago)
+    print(end_date_today)
+
+    # Order status counts
+    new_num_orders = len(df_salesOrders_week)
+    status_counts = df_salesOrders_week['OrderStatus'].value_counts()
+    this_week_completed = status_counts.get('Completed', 0)
+    new_deleted = status_counts.get('Deleted', 0)
+    new_parked = status_counts.get('Parked', 0)
+    new_backordered = status_counts.get('Backordered', 0)
+    new_placed = status_counts.get('Placed', 0)
+    new_open_orders = new_placed + new_parked + new_backordered
+
+    df_SalesOrders_completed_dates = get_data_parallel(unleashed_data_name="SalesOrders", start_date=start_date_one_week_ago, end_date=end_date_today)  # Sales Orders By Completed Date
+    total_completed_orders_this_week = df_SalesOrders_completed_dates['OrderNumber'].nunique()
+
+    ops_summary_productivity_WTD = pd.DataFrame({
+        "Metric": [
+            "New Orders",
+            "Completed Orders",
+            "*Deleted (DELETED ORDERS OF CREATED WTD)",
+            "*Completed % (USES DELETED)"
+        ],
+        "Value": [
+            new_num_orders,
+            total_completed_orders_this_week,
+            new_deleted,
+            (total_completed_orders_this_week + new_deleted) / new_num_orders
+        ]
+    })
+    print(ops_summary_productivity_WTD)
+
+    ops_summary_work_in_progres_ytd = pd.DataFrame({
+        "Metric": [
+            "Parked",
+            "Backordered",
+            "Hold + Accounting(Sales)",
+            "Placed(Bikes) or Ready to Ship(parts & accessories)",
+            "Total Open Orders",
+            "# of Units associated with Pre-Orders"
+        ],
+        "Value": [
+            old_parked + new_parked,
+            old_backordered + new_backordered,
+            new_deleted,
+            (total_completed_orders_this_week + new_deleted) / new_num_orders
+        ]
+    })
+    print(ops_summary_work_in_progres_ytd)

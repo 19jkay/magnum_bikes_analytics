@@ -90,6 +90,7 @@ def get_shopify_inventory_data(location_id):
 
     # Normalize into a DataFrame
     df_inventory = pd.json_normalize(all_inventory, sep="_")
+    print("Columns: ", df_inventory.columns)
     return df_inventory
 
 

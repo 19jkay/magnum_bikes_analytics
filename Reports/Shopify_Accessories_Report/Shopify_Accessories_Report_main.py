@@ -5,19 +5,6 @@ from datetime import datetime, timedelta, timezone
 from Reports.Shopify_Accessories_Report.Shopify_Accessories_Report_Inventory import *
 from Reports.Shopify_Accessories_Report.Shopify_Accessories_Report_Sales import *
 
-# start_date = "2025-01-01T00:00:00-00:00"
-
-
-# today = datetime.now().date()   # use UTC date to match the -00:00 offset
-# end_date = today.strftime("%Y-%m-%dT23:59:59-00:00")
-#
-# # Date exactly one year ago
-# one_year_ago = today - timedelta(days=365)
-# # one_year_ago_str = one_year_ago.strftime('%Y-%m-%d')
-# one_year_ago_str = one_year_ago.strftime("%Y-%m-%dT23:59:59-00:00")
-# start_date = one_year_ago_str
-# print(start_date)
-# print(end_date)
 
 #TTM
 today = datetime.now(timezone.utc)
@@ -70,6 +57,12 @@ df_inventory = pd.concat(inventory_df_list, ignore_index=True)
 
 #GET PRODUCTS
 df_products = get_shopify_products()
+
+file_path = fr"C:\Users\joshu\Documents\Shopify_raw_inventory.xlsx"
+os.makedirs(os.path.dirname(file_path), exist_ok=True)
+df_inventory.to_excel(file_path, index=False)
+print(f"Excel file written to: {file_path}")
+
 df_products = clean_shopify_products(df_products)
 df_products["SKU Name"] = (df_products[["title", 'Specific_sku_type']].astype(str).agg(" ".join, axis=1))
 kept_cols_products = ['SKU Name', 'inventory_item_id', 'title', 'product_type', 'sku_id']
