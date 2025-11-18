@@ -65,7 +65,7 @@ print(f"Excel file written to: {file_path}")
 
 df_products = clean_shopify_products(df_products)
 df_products["SKU Name"] = (df_products[["title", 'Specific_sku_type']].astype(str).agg(" ".join, axis=1))
-kept_cols_products = ['SKU Name', 'inventory_item_id', 'title', 'product_type', 'sku_id']
+kept_cols_products = ['SKU Name', 'inventory_item_id', 'title', 'product_type', 'sku_id', 'vendor']
 df_products = df_products[kept_cols_products]
 
 
@@ -82,7 +82,7 @@ df_sales_TTM_with_inventory_item_id = df_sales.merge(df_products[['SKU Name', 'i
 #Join product, inventory, and location data. This gives inventory repord
 df_location_inventory = df_inventory.merge(df_products, how='left', on='inventory_item_id')
 df_location_inventory = df_location_inventory.merge(df_locations, how='left', on='location_id')
-kept_cols_inventory = ['inventory_item_id', 'SKU Name', 'available', 'name', 'location_id', 'title', 'product_type']
+kept_cols_inventory = ['inventory_item_id', 'SKU Name', 'available', 'name', 'location_id', 'title', 'product_type', 'vendor']
 df_location_inventory = df_location_inventory[kept_cols_inventory]
 df_location_inventory.rename(columns={'available' : 'Qty Available', 'name' : 'Location'}, inplace=True)
 
@@ -93,7 +93,7 @@ df_location_inventory.rename(columns={'available' : 'Qty Available', 'name' : 'L
 
 #Join TTM sales to inventory report
 df_location_inventory_sales = df_location_inventory.merge(df_sales_TTM_with_inventory_item_id, how='left', on=['inventory_item_id', 'location_id'])
-keep_cols_final = ["inventory_item_id", "variant_id", "Location", 'title', 'product_type', "SKU Name_x", "Qty Available", "Units Sold TTM", "Units Sold T3M", "Pct_T3M_of_TTM"]
+keep_cols_final = ["inventory_item_id", "variant_id", "Location", "vendor", 'title', 'product_type', "SKU Name_x", "Qty Available", "Units Sold TTM", "Units Sold T3M", "Pct_T3M_of_TTM"]
 df_location_inventory_sales = df_location_inventory_sales[keep_cols_final]
 df_location_inventory_sales.rename(columns={'SKU Name_x' : 'SKU Name Variant', 'title' : 'SKU Shopify', 'Location' : 'Store Location'}, inplace=True)
 df_location_inventory_sales = df_location_inventory_sales.loc[df_location_inventory_sales['product_type'] == 'Accessories']

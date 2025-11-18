@@ -107,8 +107,25 @@ def get_sales_orders(unleashed_data_name, start_date, end_date, url_param="", pa
 def get_sales_orders_date(unleashed_data_name, start_date, end_date, url_param, page_number):
     # Include serialBatch=true to get serial numbers in the response
     # url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true"
-    url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true&orderStatus=Open,Completed,Backordered,Parked,Placed,Deleted,Accounting"
-    # url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true"
+    url_param = f"startDate={start_date}&endDate={end_date}&serialBatch=true&orderStatus=Completed,Backordered,Parked,Placed,Deleted"
+    # url_param = (
+    #     f"startDate={start_date}"
+    #     f"&endDate={end_date}"
+    #     f"&serialBatch=true"
+    #     f"&customOrderStatus="
+    # )
+    # url_param = (
+    #     f"startDate={start_date}"
+    #     f"&endDate={end_date}"
+    #     f"&serialBatch=true"
+    #     f"&orderStatus=Open,Completed,Backordered,Parked,Placed,Deleted"
+    #     f"&customOrderStatus=Accounting,CPO Ready,HOLD,INTL Parked,NPI Aug,NPI Sept,Ready Ship STG,Ready to Ship,Sales and CS"
+    # )
+    # url_param = (
+    #     f"startDate={start_date}"
+    #     f"&endDate={end_date}"
+    #     f"&serialBatch=true"
+    # )
 
     url_base = 'SalesOrders' + "/Page"
     unleashed_json = unleashed_api_get_request(url_base, page_number, url_param)
@@ -441,4 +458,9 @@ def get_data_parallel(unleashed_data_name, url_param="", start_date='', end_date
 # start_date = '2025-01-04'
 # end_date = '2025-08-04'
 # df_invoices = get_data_parallel(unleashed_data_name="SalesOrders", start_date=start_date, end_date=end_date)
-# df_warehouses = get_data_parallel(unleashed_data_name="Warehouses")
+df_products = get_data_parallel(unleashed_data_name="Products")
+file_path = fr"C:\Users\joshu\Documents\Unleashed_raw_products.xlsx"
+os.makedirs(os.path.dirname(file_path), exist_ok=True)
+df_products.to_excel(file_path, index=False)
+print(f"Excel file written to: {file_path}")
+print("DID IT")

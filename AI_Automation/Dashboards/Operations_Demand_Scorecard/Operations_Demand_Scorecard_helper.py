@@ -92,3 +92,19 @@ def get_parts_list():
                     'Wheels', 'Derailleurs']
 
     return parts_groups
+
+
+def clean_sales_orders(df):
+    df_products = get_data_parallel(unleashed_data_name="Products")
+    df_products = df_products[['ProductCode', 'ProductGroup']]
+
+    df = df.merge(
+        df_products[['ProductCode', 'ProductGroup']],
+        on='ProductCode',
+        how='left'
+    )
+
+    df['OrderDate'] = df['OrderDate'].apply(convert_ms_date).dt.date.astype(str)
+    df['RequiredDate'] = df['RequiredDate'].apply(convert_ms_date).dt.date.astype(str)
+    df['CompletedDate'] = df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
+    return df
