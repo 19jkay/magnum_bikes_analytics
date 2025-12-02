@@ -2,7 +2,9 @@ from datetime import datetime, timedelta
 import pandas as pd
 import os
 from Unleashed_Data.Unleashed_Load_Parralelize import get_data_parallel
-from AI_Automation.Dashboards.Operations_Demand_Scorecard.Operations_Demand_Scorecard_helper import unwrap_sales_orders, unwrap_warehouse_sales_orders, get_parts_list, clean_sales_orders
+from AI_Automation.Dashboards.Operations_Demand_Scorecard.Operations_Demand_Scorecard_helper import (unwrap_sales_orders,
+                                                                                                     unwrap_warehouse_sales_orders,
+                                                                                                     get_parts_list, clean_sales_orders, last_modified_on)
 
 
 #custom statuses are grouped into parked
@@ -13,11 +15,12 @@ def first_try_dashboard():
     today = datetime.today()
     yesterday = today - timedelta(days=1)
     one_week_ago = today - timedelta(days=7)
-    far_back = datetime(2025, 1, 1)
+    far_back = datetime(2020, 1, 1)
 
     #get open orders from (one year and week ago) to (week ago) this finds all open orders we had before reporting week
     start_date_far_back = far_back.strftime('%Y-%m-%d')
-    end_date_one_week_ago = one_week_ago.strftime('%Y-%m-%d')
+    # end_date_one_week_ago = one_week_ago.strftime('%Y-%m-%d')
+    end_date_one_week_ago = '2025-11-15'
     df_salesOrders_before_week = get_data_parallel(unleashed_data_name="SalesOrdersDate", start_date=start_date_far_back,  end_date=end_date_one_week_ago)
 
     df_salesOrders_before_week["ui_status"] = df_salesOrders_before_week["CustomOrderStatus"].fillna(df_salesOrders_before_week["OrderStatus"])
@@ -43,8 +46,10 @@ def first_try_dashboard():
 
 
     #get orders during this week so we can analyze orders we got this week
-    start_date_one_week_ago = one_week_ago.strftime('%Y-%m-%d')
-    end_date_today = today.strftime('%Y-%m-%d') #end date gives data up to yesterday since end date is not inclusive
+    # start_date_one_week_ago = one_week_ago.strftime('%Y-%m-%d')
+    start_date_one_week_ago = end_date_one_week_ago
+    # end_date_today = today.strftime('%Y-%m-%d') #end date gives data up to yesterday since end date is not inclusive
+    end_date_today = '2025-11-22'
     df_salesOrders_week = get_data_parallel(unleashed_data_name="SalesOrdersDate", start_date=start_date_one_week_ago,  end_date=end_date_today)
 
     df_salesOrders_week["ui_status"] = df_salesOrders_week["CustomOrderStatus"].fillna(df_salesOrders_week["OrderStatus"])
@@ -577,18 +582,24 @@ def second_try_dashboard():
 
 
 def third_try_dashboard():
-    print("Second Try Dashboard")
+    print("Third Try Dashboard")
     today = datetime.today()
     yesterday = today - timedelta(days=1)
     one_week_ago = today - timedelta(days=7)
-    far_back = datetime(2025, 1, 1)
+    far_back = datetime(2020, 1, 1)
 
     # get open orders from (one year and week ago) to (week ago) this finds all open orders we had before reporting week
     start_date_far_back = far_back.strftime('%Y-%m-%d')
     end_date_one_week_ago = one_week_ago.strftime('%Y-%m-%d')
-    # end_date_one_week_ago = '2025-11-11'
+    end_date_one_week_ago = '2025-11-15'
     df_salesOrders_before_week = get_data_parallel(unleashed_data_name="SalesOrdersDate",
                                                    start_date=start_date_far_back, end_date=end_date_one_week_ago)
+
+
+    # file_path = fr"C:\Users\joshu\Documents\last_week_orderDates.xlsx"
+    # os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    # df_salesOrders_before_week.to_excel(file_path, index=False)
+    # print(f"Excel file written to: {file_path}")
 
     df_salesOrders_before_week["ui_status"] = df_salesOrders_before_week["CustomOrderStatus"].fillna(df_salesOrders_before_week["OrderStatus"])
     print(start_date_far_back)
@@ -604,23 +615,33 @@ def third_try_dashboard():
     old_hold = old_status_counts.get('HOLD', 0)
     old_accounting = old_status_counts.get('Accounting', 0)
     old_ready_to_ship = old_status_counts.get('Ready to Ship', 0)
+    old_ready_to_ship_STG = old_status_counts.get('Ready Ship STG', 0)
 
     # old_open_orders = old_placed + old_parked + old_backordered
     old_open_orders = len(df_salesOrders_before_week) - old_completed - old_deleted
-    print("HOLD: ", old_hold)
-    print("Accounting: ", old_accounting)
-    print("Ready to Ship: ", old_ready_to_ship)
 
-    print("Open?: ", len(df_salesOrders_before_week) - old_completed - old_deleted) #yes
 
     # get orders during this week so we can analyze orders we got this week
     start_date_one_week_ago = end_date_one_week_ago
-    end_date_today = today.strftime('%Y-%m-%d')  # end date gives data up to yesterday since end date is not inclusive
-    # end_date_today = '2025-11-18'
+    # end_date_today = today.strftime('%Y-%m-%d')  # end date gives data up to yesterday since end date is not inclusive
+    end_date_today = '2025-11-22'
     df_salesOrders_week = get_data_parallel(unleashed_data_name="SalesOrdersDate", start_date=start_date_one_week_ago,
                                             end_date=end_date_today)
 
     df_salesOrders_week["ui_status"] = df_salesOrders_week["CustomOrderStatus"].fillna(df_salesOrders_week["OrderStatus"])
+
+    # get number of deleted during the week
+    df_salesOrders_before_week_fixed_lmd = last_modified_on(df_salesOrders_before_week)
+    df_salesOrders_before_week_fixed_lmd_deleted = df_salesOrders_before_week_fixed_lmd.loc[
+        df_salesOrders_before_week_fixed_lmd['OrderStatus'] == 'Deleted']
+    start_date_lmd = datetime.strptime(start_date_one_week_ago, "%Y-%m-%d").date()
+    end_date_lmd = datetime.strptime(end_date_today, "%Y-%m-%d").date()
+    mask = (df_salesOrders_before_week_fixed_lmd_deleted['LastModifiedOn'] >= start_date_lmd) & (
+                df_salesOrders_before_week_fixed_lmd_deleted['LastModifiedOn'] < end_date_lmd)
+    df_old_deleted = df_salesOrders_before_week_fixed_lmd_deleted.loc[mask]
+    print("THING: ", df_old_deleted['OrderNumber'])
+    old_deleted_everything = len(df_old_deleted)
+    print("THING2: ", old_deleted_everything)
 
 
     print(start_date_one_week_ago)
@@ -640,9 +661,9 @@ def third_try_dashboard():
     new_hold = status_counts.get('HOLD', 0)
     new_accounting = status_counts.get('Accounting', 0)
     new_ready_to_ship = status_counts.get('Ready to Ship', 0)
+    new_ready_to_ship_STG = status_counts.get('Ready Ship STG', 0)
 
     new_open_orders = new_num_orders - new_completed - new_deleted
-    print("New open orders: ", new_open_orders)
 
 
     df_SalesOrders_completed_dates = get_data_parallel(unleashed_data_name="SalesOrders", start_date=start_date_one_week_ago, end_date=end_date_today)  # Sales Orders By Completed Date
@@ -652,33 +673,50 @@ def third_try_dashboard():
         "Metric": [
             "New Orders",
             "Completed Orders",
-            "*Deleted (DELETED ORDERS OF CREATED WTD)",
-            "*Completed % (USES DELETED)"
+            "*Deleted",
+            "*Completed %"
         ],
         "Value": [
             new_num_orders,
             total_completed_orders_this_week,
-            new_deleted,
-            (total_completed_orders_this_week + new_deleted) / new_num_orders
+            old_deleted_everything + new_deleted,
+            (total_completed_orders_this_week + old_deleted_everything + new_deleted) / new_num_orders
         ]
     })
     print(ops_summary_productivity_WTD)
 
     print("///////////////////////")
-    df_total_orderDates = pd.concat([df_salesOrders_before_week, df_salesOrders_week], axis=0)
-    # df_total_orderDates = clean_sales_orders(df_total_orderDates)
-    df_total_orderDates = unwrap_sales_orders(df_total_orderDates)
-    print("columns needed: ", df_total_orderDates.columns)
+
+    df_salesOrders_before_week_unwrapped = clean_sales_orders(df_salesOrders_before_week)
+    df_salesOrders_week_unwrapped = clean_sales_orders(df_salesOrders_week)
 
 
 
-    df_placed_bikes = df_total_orderDates.loc[(df_total_orderDates['ui_status'] == 'Placed') & (df_total_orderDates['ProductGroup'] == 'Bikes')]
-    print("THIS THING: ", df_placed_bikes['OrderNumber'])
-    placed_bikes = df_placed_bikes['OrderNumber'].nunique()
-    print("THIS THING: ", placed_bikes)
-    df_ready_to_ship_parts_accessories = (df_total_orderDates.loc[(df_total_orderDates['ui_status'] == 'Ready to Ship')
-                                                              & (df_total_orderDates['ProductGroup'].isin(get_parts_list() + ['Accessories']))])
-    ready_to_ship_parts_accessories = df_ready_to_ship_parts_accessories['OrderNumber'].nunique()
+    #before this week
+    #bikes
+    df_placed_bikes_before_week = df_salesOrders_before_week_unwrapped.loc[(df_salesOrders_before_week_unwrapped['ui_status'] == 'Placed') & (df_salesOrders_before_week_unwrapped['ProductGroup'] == 'Bikes')]
+    placed_bikes_before_week = df_placed_bikes_before_week['OrderNumber'].nunique()
+
+   #accessores parts
+    df_ready_to_ship_parts_accessories_before_week = (df_salesOrders_before_week_unwrapped.loc[(df_salesOrders_before_week_unwrapped['ui_status'] == 'Ready to Ship')
+                                                              & (df_salesOrders_before_week_unwrapped['ProductGroup'].isin(get_parts_list() + ['Accessories']))])
+    ready_to_ship_parts_accessories_before_week = df_ready_to_ship_parts_accessories_before_week['OrderNumber'].nunique()
+
+
+
+    #during this week
+    #bikes
+    df_placed_bikes_week = df_salesOrders_week_unwrapped.loc[(df_salesOrders_week_unwrapped['ui_status'] == 'Placed') & (df_salesOrders_week_unwrapped['ProductGroup'] == 'Bikes')]
+    placed_bikes_week = df_placed_bikes_week['OrderNumber'].nunique()
+
+    #accessroes parts
+    df_ready_to_ship_parts_accessories_week = (
+    df_salesOrders_week_unwrapped.loc[(df_salesOrders_week_unwrapped['ui_status'] == 'Ready to Ship')
+                                             & (df_salesOrders_week_unwrapped['ProductGroup'].isin(
+        get_parts_list() + ['Accessories']))])
+    ready_to_ship_parts_accessories_week = df_ready_to_ship_parts_accessories_week[
+        'OrderNumber'].nunique()
+
 
     ops_summary_work_in_progres_ytd = pd.DataFrame({
         "Metric": [
@@ -695,12 +733,21 @@ def third_try_dashboard():
             old_backordered + new_backordered,
             old_hold + new_hold + old_accounting + new_accounting,
             "Zach",
-            placed_bikes + ready_to_ship_parts_accessories,
+            # placed_bikes_before_week + placed_bikes_week + ready_to_ship_parts_accessories_before_week + ready_to_ship_parts_accessories_week,
+            old_placed + new_placed + old_ready_to_ship + new_ready_to_ship + old_ready_to_ship_STG + new_ready_to_ship_STG,
             old_open_orders + new_open_orders,
-            "Use once figure out open orders"
+            "Zach"
         ]
     })
     print(ops_summary_work_in_progres_ytd)
+
+
+
+
+    #BIKES
+    df_salesOrders_week_unwrapped_Jamn_bikes = df_salesOrders_week_unwrapped.loc[(df_salesOrders_week_unwrapped['WarehouseName'] == 'Jam-N Logistics')
+                                                                                 & (df_salesOrders_week_unwrapped['ProductGroup'] == 'Bikes')]
+    Total_sent_Bike_Orders_JamN = df_salesOrders_week_unwrapped_Jamn_bikes['OrderNumber'].nunique()
 
 
 
@@ -719,7 +766,7 @@ def third_try_dashboard():
             "Jam-N Bikes Per Order"
         ],
         "Value": [
-            Total_num_Bike_Orders_JamN,
+            Total_sent_Bike_Orders_JamN,
             num_bikes_fulfilled_JamN,
             num_bikes_fulfilled_JamN / Total_num_Bike_Orders_JamN
         ]
@@ -730,10 +777,27 @@ def third_try_dashboard():
 
 
     #Parts
+    df_salesOrders_before_week_unwrapped = clean_sales_orders(df_salesOrders_before_week)
+    df_salesOrders_week_unwrapped = clean_sales_orders(df_salesOrders_week)
+
+    ready_to_ship_list = ['Ready to Ship','Ready Ship STG']
+    df_parts_awaiting_shipment_before_week = df_salesOrders_before_week_unwrapped.loc[(df_salesOrders_before_week_unwrapped['ui_status'].isin(ready_to_ship_list))
+                                                                                      & (df_salesOrders_before_week_unwrapped['ProductGroup'].isin(get_parts_list()))]
+    total_parts_orders_orderDate_before_week = df_parts_awaiting_shipment_before_week['OrderNumber'].nunique()
+    print("THING: ", df_parts_awaiting_shipment_before_week['OrderNumber'])
+
+    df_parts_awaiting_shipment_week = df_salesOrders_week_unwrapped.loc[
+        (df_salesOrders_week_unwrapped['ui_status'].isin(ready_to_ship_list))
+        & (df_salesOrders_week_unwrapped['ProductGroup'].isin(get_parts_list()))]
+    total_parts_orders_orderDate_week = df_parts_awaiting_shipment_week['OrderNumber'].nunique()
+    print(df_parts_awaiting_shipment_week['OrderNumber'])
+
+
+
     print("///////////////////////")
     df_unwrapped_salesorders_parts_completed_dates = df_unwrapped_salesorders_completed_date.loc[df_unwrapped_salesorders_completed_date['ProductGroup'].isin(get_parts_list())]
     # df_unwrapped_salesorders_parts_completed_dates = df_unwrapped_salesorders_completed_date.loc[df_unwrapped_salesorders_completed_date['Warehouse'].isin(['Brickyard', ''])]
-    total_parts_orders = df_unwrapped_salesorders_parts_completed_dates['OrderNumber'].nunique()
+    # total_parts_orders = df_unwrapped_salesorders_parts_completed_dates['OrderNumber'].nunique()
     parts_units_fulfilled = df_unwrapped_salesorders_parts_completed_dates['OrderQuantity'].sum()
 
     df_unwrapped_salesorders_accessories_order_dates = df_unwrapped_salesorders_completed_date.loc[
@@ -749,7 +813,7 @@ def third_try_dashboard():
             "Accessory Units Fulfilled"
         ],
         "Value": [
-            total_parts_orders,
+            total_parts_orders_orderDate_before_week + total_parts_orders_orderDate_week,
             parts_units_fulfilled,
             total_accessories_orders,
             accessory_units_fulfilled
@@ -809,6 +873,5 @@ def third_try_dashboard():
 
 
 
-first_try_dashboard()
-# second_try_dashboard()
+# first_try_dashboard()
 third_try_dashboard()

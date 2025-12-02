@@ -83,28 +83,79 @@ def unwrap_warehouse_sales_orders(df):
 
 
 def get_parts_list():
-    parts_groups = ['Battery',
-                    'Bottom Brackets', 'Brakes', 'Chargers',
-                    'Cockpit', 'Controllers', 'Conversion Kit', 'Derailleur Hangers',
-                    'Displays', 'Drivetrain', 'Electronics', 'Fenders', 'Forks', 'Frame',
-                    'Headset', 'Lights', 'Motor Wheels', 'Motors',
-                    'Racks', 'Scooters', 'Shifters', 'Throttles', 'Tires', 'Tubes',
-                    'Wheels', 'Derailleurs']
+
+
+    parts_groups = [
+        "Battery","Bottom Brackets","Brakes","Chargers",
+        "Cockpit",
+        "Controllers",
+        "Conversion Kit",
+        "Derailleur Hangers",
+        "Derailleurs",
+        "Displays",
+        "Drivetrain",
+        "Electronics",
+        "Fenders",
+        "Forks",
+        "Frame",
+        "Headset",
+        "Lights",
+        "Motor Wheels",
+        "Motors",
+        "Parts",
+        "PAS",
+        "Racks",
+        "Shifters",
+        "Throttles",
+        "Tires",
+        "Tubes"
+    ]
 
     return parts_groups
 
 
 def clean_sales_orders(df):
+
+    # The InvoiceLines column has a list of dictionaries for each individual purchase. Make each dictionary a row in the dataframe
+    # Step 1: Create a copy without the 'InvoiceLines' column
+    base_df = df.drop(columns=['SalesOrderLines'])
+    # Step 2: Convert 'InvoiceLines' list of dicts into a separate DataFrame
+    lines_df = df[['SalesOrderLines']].explode('SalesOrderLines').reset_index()
+    # Step 3: Normalize each dictionary into its own row
+    invoice_lines_expanded = pd.json_normalize(lines_df['SalesOrderLines'])
+    # Step 4: Merge base invoice info with each invoice line
+    final_df = pd.concat([base_df.loc[lines_df['index']].reset_index(drop=True), invoice_lines_expanded], axis=1)
+    final_df = final_df.rename(columns={'LastModifiedOn': 'SalesOrderLines_LastModifiedOn'})
+
+    # convert weird date format to regular date
+    final_df['OrderDate'] = final_df['OrderDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['RequiredDate'] = final_df['RequiredDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['CompletedDate'] = final_df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
+
+    warehouse_df = final_df['Warehouse'].apply(pd.Series)
+    df_expanded = pd.concat([final_df.drop(columns=['Warehouse']), warehouse_df], axis=1)
+    df_expanded = df_expanded.rename(columns={'LastModifiedOn': 'Warehouse_LastModifiedOn'})
+    final_df = df_expanded.rename(columns={'Guid': 'Warehouse_Guid'})
+
+    final_df.rename(columns={'Product.ProductCode': 'ProductCode'}, inplace=True)
+    final_df.rename(columns={'Product.ProductDescription': 'ProductDescription'}, inplace=True)
+
+
     df_products = get_data_parallel(unleashed_data_name="Products")
     df_products = df_products[['ProductCode', 'ProductGroup']]
 
-    df = df.merge(
+    final_df = final_df.merge(
         df_products[['ProductCode', 'ProductGroup']],
         on='ProductCode',
         how='left'
     )
 
-    df['OrderDate'] = df['OrderDate'].apply(convert_ms_date).dt.date.astype(str)
-    df['RequiredDate'] = df['RequiredDate'].apply(convert_ms_date).dt.date.astype(str)
-    df['CompletedDate'] = df['CompletedDate'].apply(convert_ms_date).dt.date.astype(str)
+    final_df['OrderQuantity'] = final_df['OrderQuantity'].astype(float)
+    final_df['ProductGroup'] = final_df['ProductGroup'].replace('', 'No Product Group')
+    final_df['ProductGroup'] = final_df['ProductGroup'].fillna('No Product Group')
+    return final_df
+
+
+def last_modified_on(df):
+    df['LastModifiedOn'] = df['LastModifiedOn'].apply(convert_ms_date).dt.date
     return df
